@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problem Solving - SQL Learning Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        {% set show_home_link = true %}
+        {% include 'components/header.html' with context %}
+
+        <main class="problem-page">
+            <div class="page-header">
+                <h2>Problem-Solving Mode</h2>
+                <button class="btn btn-secondary" onclick="backToProblems()" id="back-to-problems-btn" style="display: none;"><i data-lucide="arrow-left" class="icon icon-md"></i> Back to Problems</button>
+                <a href="/" class="btn btn-secondary" id="back-to-home-btn"><i data-lucide="arrow-left" class="icon icon-md"></i> Back to Home</a>
+            </div>
+
+            <div class="problem-setup" id="setup-panel">
+                <h3>Choose Your Challenge</h3>
+                <div class="setup-options">
+                    <div class="option-group">
+                        <label>Difficulty Level:</label>
+                        <select id="difficulty-select">
+                            <option value="basic">Basic - SELECT, WHERE, simple filtering</option>
+                            <option value="intermediate" selected>Intermediate - JOINs, GROUP BY, aggregates</option>
+                            <option value="advanced">Advanced - Window functions, CTEs, subqueries</option>
+                            <option value="expert">Expert - Recursive CTEs, complex analytics</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-large" onclick="generateProblem()">
+                        Generate New Problem
+                    </button>
+                </div>
+                
+                <div class="saved-problems-section">
+                    <h4>Saved Problems</h4>
+                    <div id="saved-problems-list" class="saved-problems-list">
+                        <p class="loading-text">Loading saved problems...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="problem-workspace" id="workspace" style="display: none;">
+                <div class="problem-description">
+                    <div class="problem-header">
+                        <h3 id="problem-title"></h3>
+                        <span class="difficulty-badge" id="problem-difficulty"></span>
+                    </div>
+                    <p id="problem-description"></p>
+                    <div class="problem-topic">
+                        <strong>Topic:</strong> <span id="problem-topic"></span>
+                    </div>
+                </div>
+
+                <div class="workspace-main">
+                    <div class="database-schema">
+                        <div class="schema-header">
+                            <h4>Database Schema</h4>
+                            <button class="btn btn-small btn-icon" onclick="toggleSchema()" id="schema-toggle-btn" title="Toggle Schema">
+                                <i data-lucide="chevron-down" class="icon icon-sm"></i>
+                            </button>
+                        </div>
+                        <div id="schema-content">
+                            <div id="schema-tables"></div>
+                        </div>
+                    </div>
+
+                    <div class="query-editor">
+                        <h4>Your SQL Query</h4>
+                        <textarea id="sql-query" placeholder="-- Write your SQL query here...
+SELECT * FROM customers;"></textarea>
+                        <div class="editor-actions">
+                            <div class="editor-actions-left">
+                                <button class="btn btn-primary" onclick="runQuery()"><i data-lucide="play" class="icon icon-md"></i> Run Query</button>
+                                <button class="btn btn-hint" onclick="getHint()"><i data-lucide="lightbulb" class="icon icon-md"></i> Get Hint (<span id="hints-used">0</span>/3)</button>
+                                <button class="btn btn-secondary" onclick="clearQuery()"><i data-lucide="x" class="icon icon-md"></i> Clear</button>
+                            </div>
+                            <button class="btn btn-success" id="submit-btn" onclick="submitQuery()" disabled><i data-lucide="check-circle" class="icon icon-md"></i> Submit for Review</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hint-display" id="hint-display" style="display: none;">
+                    <h4>Hint:</h4>
+                    <p id="hint-text"></p>
+                </div>
+
+                <div class="query-results" id="results-panel" style="display: none;">
+                    <h4>Query Results:</h4>
+                    <div id="results-content"></div>
+                </div>
+
+                <div class="feedback-panel" id="feedback-panel" style="display: none;">
+                    <div class="feedback-content">
+                        <h4>Feedback:</h4>
+                        <div class="feedback-score">
+                            Score: <span id="feedback-score">0</span>/100
+                        </div>
+                        <div class="feedback-message" id="feedback-message"></div>
+                        <div class="feedback-praise" id="feedback-praise"></div>
+                        <div class="feedback-improvements" id="feedback-improvements"></div>
+                    </div>
+                    <div class="feedback-actions">
+                        <button class="btn btn-primary" onclick="showSolution()">Show Solution</button>
+                        <button class="btn btn-success" onclick="nextProblem()">Next Problem</button>
+                    </div>
+                </div>
+
+                <div class="solution-panel" id="solution-panel" style="display: none;">
+                    <h4>Solution:</h4>
+                    <pre><code id="solution-query"></code></pre>
+                    <div class="solution-explanation" id="solution-explanation"></div>
+                </div>
+            </div>
+        </main>
+
+        {% set footer_text = 'Practice makes perfect!' %}
+        {% include 'components/footer.html' with context %}
+    </div>
+
+    {% include 'components/loading-overlay.html' %}
+    {% include 'components/modal.html' %}
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api/progress.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api/problems.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/stats.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/loading.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/problem-state.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/schema-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/results-display.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/query-editor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/feedback-display.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/saved-problems.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/problem-setup.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/problems/problem-workspace.js') }}"></script>
+    <script>
+        // Initialize
+        Stats.load();
+        SchemaViewer.load();
+        SavedProblems.load();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
