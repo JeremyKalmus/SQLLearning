@@ -1,0 +1,190 @@
+{
+  "basic": [
+    {
+      "id": "basic_1",
+      "topic": "Query Execution Order",
+      "level": "basic",
+      "question": "What is the actual execution order of SQL clauses?",
+      "answer": "FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT",
+      "explanation": "SQL executes in a different order than it's written. Understanding this helps explain why you can't use SELECT aliases in WHERE, but can in ORDER BY.",
+      "example": "You CANNOT do this:\nSELECT price * 1.1 AS new_price\nWHERE new_price > 100\n\nBut you CAN do this:\nSELECT price * 1.1 AS new_price\nORDER BY new_price"
+    },
+    {
+      "id": "basic_2",
+      "topic": "SELECT DISTINCT",
+      "level": "basic",
+      "question": "How do you remove duplicate rows from query results?",
+      "answer": "SELECT DISTINCT",
+      "explanation": "DISTINCT removes duplicate rows from the result set. It applies to all selected columns together.",
+      "example": "SELECT DISTINCT city, state\nFROM customers;"
+    },
+    {
+      "id": "basic_3",
+      "topic": "WHERE Clause",
+      "level": "basic",
+      "question": "What are the basic comparison operators in WHERE?",
+      "answer": "= (equal), != or <> (not equal), >, >=, <, <=, BETWEEN, IN, NOT IN",
+      "explanation": "These operators filter rows before any grouping occurs.",
+      "example": "WHERE price >= 100\nWHERE category IN ('Electronics', 'Furniture')\nWHERE price BETWEEN 10 AND 50"
+    },
+    {
+      "id": "basic_4",
+      "topic": "LIKE Pattern Matching",
+      "level": "basic",
+      "question": "What wildcards are used with LIKE for pattern matching?",
+      "answer": "% (matches any number of characters), _ (matches single character)",
+      "explanation": "LIKE is used for pattern matching with text. % is like * in file systems.",
+      "example": "WHERE name LIKE 'John%'  -- Starts with John\nWHERE name LIKE '%son'  -- Ends with son\nWHERE name LIKE '%and%' -- Contains and\nWHERE name LIKE 'J_hn'  -- J, any char, hn"
+    },
+    {
+      "id": "basic_5",
+      "topic": "NULL Handling",
+      "level": "basic",
+      "question": "How do you check for NULL values in SQL?",
+      "answer": "IS NULL and IS NOT NULL",
+      "explanation": "NULL cannot be compared with = or !=. You must use IS NULL or IS NOT NULL.",
+      "example": "WHERE manager_id IS NULL\nWHERE email IS NOT NULL"
+    }
+  ],
+  "intermediate": [
+    {
+      "id": "inter_1",
+      "topic": "INNER JOIN",
+      "level": "intermediate",
+      "question": "What does INNER JOIN return?",
+      "answer": "Only rows where there is a match in both tables",
+      "explanation": "INNER JOIN is the most common join type. It excludes rows that don't have matching values in the join condition.",
+      "example": "SELECT customers.name, orders.total\nFROM customers\nINNER JOIN orders ON customers.id = orders.customer_id"
+    },
+    {
+      "id": "inter_2",
+      "topic": "LEFT JOIN",
+      "level": "intermediate",
+      "question": "What does LEFT JOIN return?",
+      "answer": "All rows from the left table, matching rows from right (NULL if no match)",
+      "explanation": "LEFT JOIN keeps all records from the first table, filling with NULL where the second table has no match.",
+      "example": "SELECT customers.name, orders.total\nFROM customers\nLEFT JOIN orders ON customers.id = orders.customer_id"
+    },
+    {
+      "id": "inter_3",
+      "topic": "GROUP BY",
+      "level": "intermediate",
+      "question": "What is the purpose of GROUP BY?",
+      "answer": "Groups rows with the same values together so you can use aggregate functions",
+      "explanation": "GROUP BY collapses multiple rows into groups. Each group gets one output row.",
+      "example": "SELECT category, COUNT(*), AVG(price)\nFROM products\nGROUP BY category"
+    },
+    {
+      "id": "inter_4",
+      "topic": "HAVING Clause",
+      "level": "intermediate",
+      "question": "What's the difference between WHERE and HAVING?",
+      "answer": "WHERE filters rows before grouping, HAVING filters groups after aggregation",
+      "explanation": "WHERE filters individual rows, HAVING filters grouped results.",
+      "example": "SELECT category, AVG(price)\nFROM products\nWHERE stock > 0\nGROUP BY category\nHAVING AVG(price) > 100"
+    },
+    {
+      "id": "inter_5",
+      "topic": "Aggregate Functions",
+      "level": "intermediate",
+      "question": "What are the main aggregate functions in SQL?",
+      "answer": "COUNT(), SUM(), AVG(), MIN(), MAX()",
+      "explanation": "Aggregate functions perform calculations on groups of rows and return a single value.",
+      "example": "SELECT COUNT(*), SUM(amount), AVG(amount)\nFROM sales\nWHERE region = 'West'"
+    }
+  ],
+  "advanced": [
+    {
+      "id": "adv_1",
+      "topic": "Common Table Expressions (CTEs)",
+      "level": "advanced",
+      "question": "What is a WITH clause (CTE)?",
+      "answer": "A named temporary result set that you can reference within a query",
+      "explanation": "CTEs make complex queries more readable by breaking them into named steps.",
+      "example": "WITH high_value_customers AS (\n  SELECT customer_id, SUM(total) as lifetime_value\n  FROM orders\n  GROUP BY customer_id\n  HAVING SUM(total) > 10000\n)\nSELECT c.name, h.lifetime_value\nFROM customers c\nJOIN high_value_customers h ON c.id = h.customer_id"
+    },
+    {
+      "id": "adv_2",
+      "topic": "Window Functions",
+      "level": "advanced",
+      "question": "What do window functions do differently from GROUP BY?",
+      "answer": "They perform calculations across rows while keeping individual rows (not collapsing them)",
+      "explanation": "Window functions add calculated columns without reducing the number of rows.",
+      "example": "SELECT name, salary,\n  AVG(salary) OVER (PARTITION BY department) as dept_avg\nFROM employees"
+    },
+    {
+      "id": "adv_3",
+      "topic": "ROW_NUMBER",
+      "level": "advanced",
+      "question": "What does ROW_NUMBER() do?",
+      "answer": "Assigns a unique sequential number to each row within a partition",
+      "explanation": "ROW_NUMBER gives each row a number starting from 1, resetting for each partition.",
+      "example": "SELECT name, salary,\n  ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rank\nFROM employees"
+    },
+    {
+      "id": "adv_4",
+      "topic": "RANK vs DENSE_RANK",
+      "level": "advanced",
+      "question": "What's the difference between RANK() and DENSE_RANK()?",
+      "answer": "RANK skips numbers after ties, DENSE_RANK doesn't skip any numbers",
+      "explanation": "With tied values, RANK leaves gaps (1,2,2,4), DENSE_RANK doesn't (1,2,2,3).",
+      "example": "SELECT name, score,\n  RANK() OVER (ORDER BY score DESC) as rank,\n  DENSE_RANK() OVER (ORDER BY score DESC) as dense_rank\nFROM students"
+    },
+    {
+      "id": "adv_5",
+      "topic": "Subqueries",
+      "level": "advanced",
+      "question": "What are the three types of subqueries?",
+      "answer": "Scalar (returns single value), Row (returns single row), Table (returns multiple rows)",
+      "explanation": "Subqueries can be used in SELECT, FROM, or WHERE clauses depending on what they return.",
+      "example": "Scalar: SELECT (SELECT MAX(price) FROM products)\n\nRow: WHERE (name, age) = (SELECT name, age FROM ...)\n\nTable: FROM (SELECT * FROM orders WHERE ...) AS recent"
+    }
+  ],
+  "expert": [
+    {
+      "id": "exp_1",
+      "topic": "Recursive CTEs",
+      "level": "expert",
+      "question": "How do recursive CTEs work?",
+      "answer": "They reference themselves to traverse hierarchical data through anchor + recursive parts",
+      "explanation": "Recursive CTEs have a base case (anchor) and a recursive part that references the CTE itself.",
+      "example": "WITH RECURSIVE employee_tree AS (\n  SELECT id, name, manager_id, 1 as level\n  FROM employees\n  WHERE manager_id IS NULL\n  UNION ALL\n  SELECT e.id, e.name, e.manager_id, et.level + 1\n  FROM employees e\n  JOIN employee_tree et ON e.manager_id = et.id\n)\nSELECT * FROM employee_tree"
+    },
+    {
+      "id": "exp_2",
+      "topic": "LEAD and LAG",
+      "level": "expert",
+      "question": "What do LEAD() and LAG() functions do?",
+      "answer": "Access data from subsequent (LEAD) or previous (LAG) rows without self-join",
+      "explanation": "These window functions let you compare values across rows efficiently.",
+      "example": "SELECT date, revenue,\n  LAG(revenue) OVER (ORDER BY date) as prev_revenue,\n  LEAD(revenue) OVER (ORDER BY date) as next_revenue\nFROM daily_sales"
+    },
+    {
+      "id": "exp_3",
+      "topic": "PIVOT Operations",
+      "level": "expert",
+      "question": "How do you convert rows to columns (pivot)?",
+      "answer": "Use CASE statements with aggregate functions or database-specific PIVOT syntax",
+      "explanation": "Pivoting transforms row data into columns for cross-tabulation.",
+      "example": "SELECT employee_id,\n  SUM(CASE WHEN month = 'Jan' THEN sales ELSE 0 END) as Jan,\n  SUM(CASE WHEN month = 'Feb' THEN sales ELSE 0 END) as Feb\nFROM sales\nGROUP BY employee_id"
+    },
+    {
+      "id": "exp_4",
+      "topic": "NTILE",
+      "level": "expert",
+      "question": "What does NTILE() do?",
+      "answer": "Divides rows into N roughly equal groups (quartiles, percentiles, etc.)",
+      "explanation": "NTILE is useful for creating percentile buckets or equal-sized groups.",
+      "example": "SELECT name, salary,\n  NTILE(4) OVER (ORDER BY salary) as quartile\nFROM employees"
+    },
+    {
+      "id": "exp_5",
+      "topic": "FIRST_VALUE and LAST_VALUE",
+      "level": "expert",
+      "question": "What do FIRST_VALUE() and LAST_VALUE() return?",
+      "answer": "The first/last value in a window frame based on the ORDER BY clause",
+      "explanation": "These functions access boundary values within a partition or frame.",
+      "example": "SELECT date, price,\n  FIRST_VALUE(price) OVER (ORDER BY date) as opening_price,\n  LAST_VALUE(price) OVER (ORDER BY date) as current_price\nFROM stock_prices"
+    }
+  ]
+}
