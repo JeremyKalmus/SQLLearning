@@ -1368,6 +1368,7 @@ header h1,
     color: var(--text-color);
 }
 
+.schema-content,
 #schema-content {
     overflow-x: auto;
     overflow-y: hidden;
@@ -1375,6 +1376,7 @@ header h1,
     padding-right: var(--spacing-sm);
 }
 
+.schema-tables,
 #schema-tables {
     display: flex;
     flex-direction: row;
@@ -1382,20 +1384,24 @@ header h1,
     width: max-content;
 }
 
+.schema-content::-webkit-scrollbar,
 #schema-content::-webkit-scrollbar {
     width: var(--spacing-sm);
 }
 
+.schema-content::-webkit-scrollbar-track,
 #schema-content::-webkit-scrollbar-track {
     background: var(--bg-color);
     border-radius: var(--radius-sm);
 }
 
+.schema-content::-webkit-scrollbar-thumb,
 #schema-content::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: var(--radius-sm);
 }
 
+.schema-content::-webkit-scrollbar-thumb:hover,
 #schema-content::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
 }

@@ -87,43 +87,45 @@ export default function SchemaViewer({ onTablePreview }) {
       </div>
       
       {expanded && (
-        <div className="schema-content">
-          {Object.entries(schema).map(([tableName, tableInfo]) => {
-            const fkColumns = new Set(
-              (tableInfo.foreign_keys || []).map(fk => fk.column)
-            );
+        <div id="schema-content" className="schema-content">
+          <div id="schema-tables" className="schema-tables">
+            {Object.entries(schema).map(([tableName, tableInfo]) => {
+              const fkColumns = new Set(
+                (tableInfo.foreign_keys || []).map(fk => fk.column)
+              );
 
-            return (
-              <div key={tableName} className="schema-table">
-                <div className="schema-table-header">
-                  <h5>{tableName}</h5>
-                  {onTablePreview && (
-                    <button
-                      className="btn-icon-small btn-preview"
-                      onClick={() => onTablePreview(tableName)}
-                      title="Preview table data"
-                    >
-                      <Eye size={16} />
-                    </button>
-                  )}
+              return (
+                <div key={tableName} className="schema-table">
+                  <div className="schema-table-header">
+                    <h5>{tableName}</h5>
+                    {onTablePreview && (
+                      <button
+                        className="btn-icon-small btn-preview"
+                        onClick={() => onTablePreview(tableName)}
+                        title="Preview table data"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <ul className="schema-columns">
+                    {tableInfo.columns.map((col) => {
+                      const badges = [];
+                      if (col.primary_key) badges.push(<span key="pk" className="pk-badge">PK</span>);
+                      if (fkColumns.has(col.name)) badges.push(<span key="fk" className="fk-badge">FK</span>);
+                      
+                      return (
+                        <li key={col.name}>
+                          <strong>{col.name}</strong>: {col.type}
+                          {badges.length > 0 && <span className="badges">{badges}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-                <ul className="schema-columns">
-                  {tableInfo.columns.map((col) => {
-                    const badges = [];
-                    if (col.primary_key) badges.push(<span key="pk" className="pk-badge">PK</span>);
-                    if (fkColumns.has(col.name)) badges.push(<span key="fk" className="fk-badge">FK</span>);
-                    
-                    return (
-                      <li key={col.name}>
-                        <strong>{col.name}</strong>: {col.type}
-                        {badges.length > 0 && <span className="badges">{badges}</span>}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
