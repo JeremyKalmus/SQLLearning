@@ -6,10 +6,6 @@
     <title>Problem Solving - SQL Learning Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- CodeMirror 6 for SQL Editor -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/index.css">
-    <script type="module" src="{{ url_for('static', filename='js/pages/problems/codemirror-setup.js') }}"></script>
 </head>
 <body>
     <div class="container">
@@ -75,7 +71,8 @@
 
                     <div class="query-editor">
                         <h4>Your SQL Query</h4>
-                        <div id="sql-editor-container"></div>
+                        <textarea id="sql-query" placeholder="-- Write your SQL query here...
+SELECT * FROM customers;"></textarea>
                         <div class="editor-actions">
                             <div class="editor-actions-left">
                                 <button class="btn btn-primary" onclick="runQuery()"><i data-lucide="play" class="icon icon-md"></i> Run Query</button>

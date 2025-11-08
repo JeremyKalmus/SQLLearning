@@ -534,15 +534,19 @@ header h1,
     padding: var(--spacing-2xl);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
-    min-height: 300px;
+    min-height: 400px;
+    max-height: 90vh;
     margin-bottom: var(--spacing-lg);
     perspective: 1000px;
     cursor: pointer;
+    overflow: hidden;
+    position: relative;
 }
 
 .flashcard-inner {
     position: relative;
     width: 100%;
+    height: 100%;
     min-height: 400px;
     transition: transform 0.6s;
     transform-style: preserve-3d;
@@ -556,15 +560,20 @@ header h1,
 .flashcard-back {
     position: absolute;
     width: 100%;
+    height: 100%;
     min-height: 400px;
+    max-height: 100%;
     backface-visibility: hidden;
     background: var(--card-bg);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
-    padding: 3rem;
+    padding: var(--spacing-2xl);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .flashcard-back {
@@ -1094,6 +1103,38 @@ header h1,
     margin-bottom: var(--spacing-lg);
     font-size: 14px;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.card-progress-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.accuracy-info {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.session-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.session-accuracy {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .navigation-buttons {
@@ -1234,6 +1275,10 @@ header h1,
 .flashcard-options {
     margin-top: var(--spacing-xl);
     width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .options-list {
@@ -1241,11 +1286,37 @@ header h1,
     flex-direction: column;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .options-list .option-btn {
     margin-bottom: 0;
     width: 100%;
+    position: relative;
+    padding-right: var(--spacing-2xl);
+}
+
+.option-btn .checkmark,
+.option-btn .crossmark {
+    position: absolute;
+    right: var(--spacing-md);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.option-btn .checkmark {
+    color: var(--secondary-color);
+}
+
+.option-btn .crossmark {
+    color: var(--danger-color);
+}
+
+.option-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .options-loading,
@@ -1260,9 +1331,16 @@ header h1,
     color: var(--danger-color);
 }
 
-.options-next-btn {
-    width: 100%;
+.options-actions {
+    display: flex;
+    gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+.options-try-again-btn,
+.options-next-btn {
+    flex: 1;
 }
 
 /* Problems Page Styles */
@@ -1542,17 +1620,40 @@ header h1,
     padding: var(--spacing-xl);
     border-radius: var(--radius-xl);
     border-left: 4px solid var(--warning-color);
-    margin-top: var(--spacing-3xl);
+    margin-top: var(--spacing-lg);
 }
 
 .hint-display h4 {
-    margin-bottom: 10px;
+    margin-bottom: var(--spacing-lg);
     color: #fde68a;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.hint-item {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid rgba(253, 230, 138, 0.2);
+}
+
+.hint-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.hint-level {
+    font-weight: 600;
+    color: #fde68a;
+    margin-bottom: var(--spacing-sm);
+    font-size: 14px;
 }
 
 .hint-display p {
     color: #fef3c7;
     line-height: 1.5;
+    margin: 0;
 }
 
 .query-results,
@@ -2433,16 +2534,67 @@ header h1,
         gap: var(--spacing-md);
     }
 
+    .flashcard {
+        min-height: 350px;
+        max-height: 80vh;
+    }
+
     .flashcard-front,
     .flashcard-back {
-        padding: 2rem;
+        padding: var(--spacing-xl);
         min-height: 350px;
+    }
+
+    .options-actions {
+        flex-direction: column;
+    }
+
+    .options-try-again-btn,
+    .options-next-btn {
+        width: 100%;
     }
 
     .card-question,
     .card-answer {
         font-size: 1.125rem;
     }
+}
+
+/* CodeMirror Autocomplete Styling */
+.cm-tooltip-autocomplete {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.cm-tooltip-autocomplete ul li {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+}
+
+.cm-tooltip-autocomplete ul li[aria-selected] {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.cm-tooltip-autocomplete ul li:hover {
+    background: var(--bg-color) !important;
+    color: var(--text-color) !important;
+}
+
+.cm-completionLabel {
+    color: inherit !important;
+}
+
+.cm-completionDetail {
+    color: var(--text-secondary) !important;
+    opacity: 0.7 !important;
+}
+
+.cm-tooltip-autocomplete ul li[aria-selected] .cm-completionDetail {
+    color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Cheat Sheet Slider Styles */
@@ -2638,4 +2790,76 @@ header h1,
     .cheatsheet-section-content pre {
         font-size: 0.8rem;
     }
+=======
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.progress-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.progress-message {
+    color: white;
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+.progress-bar-container {
+    width: 300px;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-text {
+    color: white;
+    font-size: 14px;
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 600;
+>>>>>>> claude/enhance-sql-editor-ui-011CUvhoS6DGNCPx4SNkon6g
 }
