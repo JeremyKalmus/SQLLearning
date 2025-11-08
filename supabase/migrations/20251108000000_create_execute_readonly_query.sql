@@ -19,9 +19,9 @@ BEGIN
   END IF;
 
   -- Execute the query and return results as JSON
-  -- Note: We use %s (not %I) because sql_query contains a full SQL statement, not an identifier
-  -- format() with %s will properly escape special characters
-  EXECUTE format('SELECT json_agg(row_to_json(t)) FROM (%s) t', sql_query) INTO result;
+  -- Since we've already validated the query is safe (SELECT/WITH only, no dangerous keywords),
+  -- we can safely use string concatenation for dynamic SQL execution
+  EXECUTE 'SELECT json_agg(row_to_json(t)) FROM (' || sql_query || ') t' INTO result;
   
   -- If result is null (no rows), return empty array
   IF result IS NULL THEN
