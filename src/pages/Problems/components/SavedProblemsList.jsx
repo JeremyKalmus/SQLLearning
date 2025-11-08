@@ -49,7 +49,7 @@ export default function SavedProblemsList({
             </div>
             <div className="saved-problem-meta">
               <div className="saved-problem-meta-left">
-                <span className={`difficulty-badge difficulty-${p?.difficulty || 'basic'}`}>
+                <span className={`difficulty-badge difficulty-${(p?.difficulty || 'basic').toLowerCase()}`}>
                   {p?.difficulty || 'basic'}
                 </span>
                 <span className="saved-problem-topic">{p?.topic || 'General SQL'}</span>
@@ -69,10 +69,6 @@ export default function SavedProblemsList({
                 <span className="saved-problem-date">{createdDate}</span>
               </div>
             </div>
-            <p className="saved-problem-description">
-              {(p?.description || '').substring(0, 100)}
-              {(p?.description || '').length > 100 ? '...' : ''}
-            </p>
           </div>
         );
       })}
