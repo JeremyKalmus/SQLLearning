@@ -35,18 +35,20 @@ BEGIN
     RETURN '[]'::json;
   END IF;
   
-  -- Get column order from the first row
-  -- row_to_json preserves column order, so we extract keys from the first JSON object
-  -- We'll use json_each_text with WITH ORDINALITY to preserve the order
+  -- Get column order from the result
+  -- row_to_json preserves column order, and we can extract it using a cursor approach
+  -- Since JSON objects in PostgreSQL preserve insertion order (in recent versions),
+  -- we'll use json_each which should maintain order
   IF json_array_length(result) > 0 THEN
     DECLARE
       first_row_json json;
       col_names text[];
+      rec record;
     BEGIN
       -- Extract first row from result array
       first_row_json := result -> 0;
       
-      -- Use json_each_text with WITH ORDINALITY to preserve key order
+      -- Use json_each_text with WITH ORDINALITY to preserve insertion order
       -- This should maintain the order that row_to_json created
       SELECT array_agg(key ORDER BY ordinality)
       INTO col_names
@@ -60,6 +62,26 @@ BEGIN
         'rows', result,
         'column_order', COALESCE(column_order, '[]'::json)
       );
+    EXCEPTION
+      WHEN OTHERS THEN
+        -- If json_each doesn't work with ordinality, try without
+        BEGIN
+          SELECT array_to_json(array_agg(key))
+          INTO column_order
+          FROM json_object_keys(first_row_json) AS key;
+          
+          RETURN json_build_object(
+            'rows', result,
+            'column_order', COALESCE(column_order, '[]'::json)
+          );
+        EXCEPTION
+          WHEN OTHERS THEN
+            -- Last resort: return without column order
+            RETURN json_build_object(
+              'rows', result,
+              'column_order', '[]'::json
+            );
+        END;
     END;
   END IF;
   

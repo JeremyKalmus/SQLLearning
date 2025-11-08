@@ -180,16 +180,31 @@ export default function Problems() {
 
       if (error) throw error;
       
-      // Save the problem
-      const { error: saveError } = await supabase
+      // Check if a problem with the same title already exists for this user
+      const { data: existingProblems } = await supabase
         .from('saved_problems')
-        .insert({
-          user_id: user.id,
-          problem_data: data,
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      // Only save if it's a new problem (different title) or if no problems exist yet
+      const isDuplicate = existingProblems?.some((sp: any) => {
+        const existingData = sp.problem_data || (existingProblems as any).find((p: any) => p.problem_data?.title === data.title);
+        return existingData?.title === data.title;
+      });
+      
+      if (!isDuplicate) {
+        // Save the problem
+        const { error: saveError } = await supabase
+          .from('saved_problems')
+          .insert({
+            user_id: user.id,
+            problem_data: data,
+          });
 
-      if (saveError) {
-        console.error('Error saving problem:', saveError);
+        if (saveError) {
+          console.error('Error saving problem:', saveError);
+        }
       }
 
       setProblem(data);

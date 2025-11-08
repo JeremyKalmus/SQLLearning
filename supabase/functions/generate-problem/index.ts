@@ -168,11 +168,8 @@ Make it realistic and educational. The problem should test understanding, not ju
 
     const problem = JSON.parse(content);
 
-    await supabase.from("saved_problems").insert({
-      user_id: user.id,
-      problem_data: problem,
-      last_accessed: new Date().toISOString(),
-    });
+    // Don't save here - let the frontend handle saving to avoid duplicates
+    // The frontend will save it after receiving the response
 
     return new Response(JSON.stringify(problem), {
       headers: {
