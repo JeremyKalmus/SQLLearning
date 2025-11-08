@@ -1,6 +1,5 @@
 # Run Flashcard Migration
 
-Execute: `node scripts/migrate-flashcards-to-db.js`
+**Step 1:** Apply database migration: `supabase/migrations/20250110000000_create_flashcards_table.sql` via Supabase dashboard SQL editor or CLI.
 
-This populates the flashcards table from flashcards.json. Required: .env with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
-
+**Step 2:** Run: `node scripts/migrate-flashcards-to-db.js`
