@@ -74,7 +74,7 @@ Be encouraging and educational. Even incorrect answers should get constructive f
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-4-5-haiku-20250514",
         max_tokens: 1000,
         messages: [{
           role: "user",
