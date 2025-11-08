@@ -36,23 +36,31 @@ BEGIN
   END IF;
   
   -- Get column order from the first row
-  -- Execute a LIMIT 1 query to get column names in SELECT order
-  EXECUTE format('SELECT * FROM (%s) t LIMIT 1', sql_query) INTO first_row;
-  
-  -- If we have a row, extract column names in order
-  -- jsonb_each_text with WITH ORDINALITY preserves the order from the record
-  IF first_row IS NOT NULL THEN
-    -- Convert record to jsonb and extract keys in order
-    -- jsonb_each_text preserves the insertion order when used with WITH ORDINALITY
-    SELECT json_agg(key ORDER BY ordinality)
-    INTO column_order
-    FROM jsonb_each_text(to_jsonb(first_row)) WITH ORDINALITY AS t(key, value, ordinality);
-    
-    -- Return result with column order
-    RETURN json_build_object(
-      'rows', result,
-      'column_order', COALESCE(column_order, '[]'::json)
-    );
+  -- row_to_json preserves column order, so we extract keys from the first JSON object
+  -- We'll use json_each_text with WITH ORDINALITY to preserve the order
+  IF json_array_length(result) > 0 THEN
+    DECLARE
+      first_row_json json;
+      col_names text[];
+    BEGIN
+      -- Extract first row from result array
+      first_row_json := result -> 0;
+      
+      -- Use json_each_text with WITH ORDINALITY to preserve key order
+      -- This should maintain the order that row_to_json created
+      SELECT array_agg(key ORDER BY ordinality)
+      INTO col_names
+      FROM json_each_text(first_row_json) WITH ORDINALITY AS t(key, value, ordinality);
+      
+      -- Convert array to JSON array
+      column_order := array_to_json(col_names);
+      
+      -- Return result with column order
+      RETURN json_build_object(
+        'rows', result,
+        'column_order', COALESCE(column_order, '[]'::json)
+      );
+    END;
   END IF;
   
   -- If no rows, still return structure but with empty column_order
