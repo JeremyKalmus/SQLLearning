@@ -1,104 +1,87 @@
 # Quick Start Guide
 
-Get up and running with SQL Learning Game in 3 simple steps!
+Get started with the SQL Learning Game in 3 simple steps!
 
-## Step 1: Get Your API Key
+## Step 1: Seed the Practice Database (One-Time Setup)
 
-1. Go to https://console.anthropic.com/
-2. Sign up or log in
-3. Click on "API Keys" in the left sidebar
-4. Click "Create Key"
-5. Copy your new API key
+The practice database needs sample data. Run this once:
 
-## Step 2: Configure the Application
-
-1. Create a `.env` file in this directory (copy from `.env.example` if it exists)
-2. Add your API key and Flask secret key:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxx
-   FLASK_SECRET_KEY=your_secret_key_here
-   ```
-   
-   **To generate a Flask secret key**, run this command:
-   ```bash
-   python3 -c "import secrets; print(secrets.token_hex(16))"
-   ```
-   Copy the output and paste it as your `FLASK_SECRET_KEY` value.
-   
-   **Note**: If you don't set `FLASK_SECRET_KEY`, the app will generate one automatically, but it's recommended to set a fixed value for consistency.
-3. Save the file
-
-## Step 3: Run the Application
-
-### Option A: Using the Startup Script (Recommended)
 ```bash
-./run.sh
+npm run seed
 ```
 
-### Option B: Manual Start
-```bash
-# Activate virtual environment
-source venv/bin/activate
+This populates the database with:
+- 100 customers
+- Products catalog
+- 200 orders
+- Order line items
+- Employee hierarchy
+- 500 sales records
 
-# Start the server
-cd backend
-python3 app.py
-```
+**Status**: Ready when you see "Practice database seeded successfully!"
 
-## Access the Game
+## Step 2: Create Your Account
 
-Open your browser and go to:
-```
-http://localhost:5000
-```
+1. Open the application in your browser
+2. Click "Sign up"
+3. Enter your email, password, and name
+4. Click "Create Account"
 
-## First Steps in the Game
+**You're now registered!**
 
-### Learn with Flashcards
-1. Click "Start Flashcards"
-2. Select "Basic" difficulty
-3. Read each question and try to recall the answer
-4. Click "Show Answer" to check
-5. Mark whether you got it correct or need more practice
+## Step 3: Configure Your API Key
 
-### Practice with Problems
-1. Click "Solve Problems"
-2. Select "Intermediate" difficulty
-3. Read the problem description
-4. Write your SQL query in the editor
-5. Click "Run Query" to execute and get AI feedback
-6. Use hints if you get stuck (3 available per problem)
+1. Get your Anthropic API key:
+   - Go to [console.anthropic.com](https://console.anthropic.com/)
+   - Sign in or create an account
+   - Navigate to "API Keys"
+   - Click "Create Key"
+   - Copy the key (starts with `sk-ant-`)
+
+2. Add it to the app:
+   - Go to **Settings** in the app
+   - Paste your API key
+   - Click "Save Key"
+
+**You're all set!** ✨
+
+## Start Learning
+
+### Flashcards
+- Review SQL concepts
+- Test your knowledge with quizzes
+- Track which cards you've mastered
+
+### Problems
+- Generate AI-powered SQL challenges
+- Write and execute queries in the professional editor
+- Get intelligent feedback
+- Use hints when you're stuck (up to 3 per problem)
+- Earn XP and level up!
+
+### Dashboard
+- View your progress
+- Track your streak
+- See statistics
 
 ## Tips for Success
 
-- **Start with Flashcards**: Build your foundation with the Basic flashcards before tackling problems
-- **Use Hints Wisely**: Try to solve problems yourself first, use hints when genuinely stuck
-- **Review Solutions**: Even when you solve a problem correctly, review the solution to learn best practices
-- **Daily Practice**: Maintain your streak by practicing a little bit each day
-- **Progress Gradually**: Move through difficulty levels: Basic → Intermediate → Advanced → Expert
+1. **Start with Basics**: Begin with Basic flashcards and problems
+2. **Practice Daily**: Maintain your streak for consistent learning
+3. **Use Hints Wisely**: They're there to help you learn, not just solve
+4. **Review Solutions**: Even when correct, check the solution for better approaches
+5. **Progress Gradually**: Move through difficulty levels systematically
 
 ## Need Help?
 
-- Check the full [README.md](README.md) for detailed documentation
-- Review [SQL_Syntax_Cheat_Sheet.md](SQL_Syntax_Cheat_Sheet.md) for SQL reference
-- Ensure your Anthropic API key is valid and has available credits
+- Check README.md for detailed documentation
+- Refer to SQL_Syntax_Cheat_Sheet.md for SQL syntax reference
 
-## Common Issues
+## Cost Information
 
-**Problem**: "API key not found" error
-**Solution**: Make sure you edited `.env` and added your real API key
+- Using the AI features requires an Anthropic API key
+- You'll be billed based on usage through your Anthropic account
+- Typical cost: ~$0.01-0.02 per problem generated
+- Expected monthly cost with daily practice: ~$6-9
 
-**Problem**: Slow responses
-**Solution**: This is normal - AI responses can take a few seconds
-
-**Problem**: Port 5000 already in use
-**Solution**: Edit `backend/app.py` and change the port number at the bottom
-
-## Database Notes
-
-- The application automatically creates `database/practice.db` and `database/progress.db` on first run
-- These files are ignored by Git, so each user gets their own fresh databases
-- Your practice data and progress are stored locally and won't be shared
-- If you want to reset your progress, simply delete `database/progress.db` and it will be recreated on next run
-
-Happy learning!
+Happy learning! 🎓
