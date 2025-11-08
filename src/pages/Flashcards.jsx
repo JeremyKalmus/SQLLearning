@@ -48,17 +48,45 @@ export default function Flashcards() {
     setIsFlipped(!isFlipped);
   };
 
-  const handleShowOptions = () => {
+  const handleShowOptions = async () => {
     if (options.length === 0) {
-      const correctOption = { text: currentCard.answer, correct: true };
-      const wrongOptions = [
-        { text: 'Option A', correct: false },
-        { text: 'Option B', correct: false },
-        { text: 'Option C', correct: false }
-      ];
+      try {
+        // Generate options using AI
+        const { data, error } = await supabase.functions.invoke('generate-flashcard-options', {
+          body: {
+            card_id: currentCard.id,
+            correct_answer: currentCard.answer,
+            question: currentCard.question,
+            topic: currentCard.topic,
+            difficulty: currentCard.level || selectedLevel
+          }
+        });
 
-      const allOptions = [correctOption, ...wrongOptions].sort(() => Math.random() - 0.5);
-      setOptions(allOptions);
+        if (error) throw error;
+        
+        if (data?.options) {
+          setOptions(data.options);
+        } else {
+          // Fallback to simple options if AI generation fails
+          const correctOption = { text: currentCard.answer, correct: true };
+          const wrongOptions = [
+            { text: 'Option A', correct: false },
+            { text: 'Option B', correct: false },
+            { text: 'Option C', correct: false }
+          ];
+          setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
+        }
+      } catch (error) {
+        console.error('Error generating options:', error);
+        // Fallback to simple options
+        const correctOption = { text: currentCard.answer, correct: true };
+        const wrongOptions = [
+          { text: 'Option A', correct: false },
+          { text: 'Option B', correct: false },
+          { text: 'Option C', correct: false }
+        ];
+        setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
+      }
     }
     setShowOptions(true);
   };
@@ -185,13 +213,13 @@ export default function Flashcards() {
 
         {isFlipped && !showOptions && (
           <div className="card-actions">
-            <button className="btn-danger" onClick={() => handleMarkCorrect(false)}>
+            <button className="btn btn-danger" onClick={() => handleMarkCorrect(false)}>
               Need More Practice
             </button>
-            <button className="btn-secondary" onClick={handleShowOptions}>
+            <button className="btn btn-secondary" onClick={handleShowOptions}>
               Test Me
             </button>
-            <button className="btn-primary" onClick={() => handleMarkCorrect(true)}>
+            <button className="btn btn-primary" onClick={() => handleMarkCorrect(true)}>
               Got It!
             </button>
           </div>
@@ -219,7 +247,7 @@ export default function Flashcards() {
               ))}
             </div>
             {selectedOption !== null && (
-              <button className="btn-primary" onClick={handleNext}>
+              <button className="btn btn-primary" onClick={handleNext}>
                 Next Card
               </button>
             )}
@@ -228,14 +256,14 @@ export default function Flashcards() {
 
         <div className="navigation-buttons">
           <button
-            className="btn-secondary"
+            className="btn btn-secondary"
             onClick={handlePrevious}
             disabled={currentIndex === 0}
           >
             Previous
           </button>
           <button
-            className="btn-secondary"
+            className="btn btn-secondary"
             onClick={handleNext}
             disabled={currentIndex === cards.length - 1}
           >
@@ -243,221 +271,6 @@ export default function Flashcards() {
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        .flashcards-page {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-
-        .flashcards-container h1 {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .level-selector {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 2rem;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-
-        .level-btn {
-          padding: 0.75rem 1.5rem;
-          border: 2px solid var(--border);
-          background: white;
-          border-radius: var(--radius);
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .level-btn.active {
-          background: var(--primary);
-          color: white;
-          border-color: var(--primary);
-        }
-
-        .level-btn:hover:not(.active) {
-          border-color: var(--primary);
-        }
-
-        .card-counter {
-          text-align: center;
-          color: var(--text-secondary);
-          margin-bottom: 1rem;
-        }
-
-        .flashcard {
-          perspective: 1000px;
-          cursor: pointer;
-          margin-bottom: 2rem;
-        }
-
-        .flashcard-inner {
-          position: relative;
-          width: 100%;
-          min-height: 400px;
-          transition: transform 0.6s;
-          transform-style: preserve-3d;
-        }
-
-        .flashcard.flipped .flashcard-inner {
-          transform: rotateY(180deg);
-        }
-
-        .flashcard-front,
-        .flashcard-back {
-          position: absolute;
-          width: 100%;
-          min-height: 400px;
-          backface-visibility: hidden;
-          background: white;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow-lg);
-          padding: 3rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        .flashcard-back {
-          transform: rotateY(180deg);
-        }
-
-        .card-topic {
-          font-size: 0.875rem;
-          color: var(--primary);
-          font-weight: 600;
-          text-transform: uppercase;
-          margin-bottom: 1.5rem;
-          text-align: center;
-        }
-
-        .card-question {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: var(--text);
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .flip-hint {
-          text-align: center;
-          color: var(--text-secondary);
-          font-size: 0.875rem;
-          margin-top: auto;
-        }
-
-        .card-answer {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--success);
-          margin-bottom: 1.5rem;
-          text-align: center;
-        }
-
-        .card-explanation {
-          color: var(--text-secondary);
-          line-height: 1.6;
-          margin-bottom: 1rem;
-        }
-
-        .card-example {
-          background: var(--background);
-          padding: 1rem;
-          border-radius: var(--radius);
-          margin-top: 1rem;
-        }
-
-        .card-example strong {
-          display: block;
-          margin-bottom: 0.5rem;
-          color: var(--text);
-        }
-
-        .card-example pre {
-          white-space: pre-wrap;
-          font-family: 'Courier New', monospace;
-          font-size: 0.875rem;
-          color: var(--text-secondary);
-        }
-
-        .card-actions {
-          display: flex;
-          gap: 1rem;
-          justify-content: center;
-          margin-bottom: 2rem;
-        }
-
-        .options-container {
-          background: white;
-          padding: 2rem;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow);
-          margin-bottom: 2rem;
-        }
-
-        .options-container h3 {
-          margin-bottom: 1.5rem;
-          text-align: center;
-        }
-
-        .options-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .option-btn {
-          padding: 1rem;
-          border: 2px solid var(--border);
-          background: white;
-          border-radius: var(--radius);
-          cursor: pointer;
-          text-align: left;
-          transition: all 0.2s;
-          font-size: 0.875rem;
-        }
-
-        .option-btn:hover:not(:disabled) {
-          border-color: var(--primary);
-        }
-
-        .option-btn.correct {
-          background: var(--success);
-          color: white;
-          border-color: var(--success);
-        }
-
-        .option-btn.incorrect {
-          background: var(--danger);
-          color: white;
-          border-color: var(--danger);
-        }
-
-        .navigation-buttons {
-          display: flex;
-          gap: 1rem;
-          justify-content: center;
-        }
-
-        @media (max-width: 768px) {
-          .flashcard-front,
-          .flashcard-back {
-            padding: 2rem;
-            min-height: 350px;
-          }
-
-          .card-question,
-          .card-answer {
-            font-size: 1.125rem;
-          }
-        }
-      `}</style>
     </div>
   );
 }

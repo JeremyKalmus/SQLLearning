@@ -82,7 +82,7 @@ export default function Register() {
             <small>Must be at least 6 characters</small>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
+import { Book } from 'lucide-react';
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -18,7 +19,7 @@ export default function Header() {
     <header className="app-header">
       <div className="header-container">
         <Link to="/" className="logo">
-          <span className="logo-icon">📚</span>
+          <Book className="logo-icon" size={24} />
           <span className="logo-text">SQL Learning Game</span>
         </Link>
 

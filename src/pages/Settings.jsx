@@ -9,6 +9,8 @@ export default function Settings() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState({ type: '', message: '' });
 
   useEffect(() => {
     loadApiKeyStatus();
@@ -83,9 +85,41 @@ export default function Settings() {
       setMessage({ type: 'success', text: 'API key removed successfully' });
       setHasApiKey(false);
       setApiKey('');
+      setTestResult({ type: '', message: '' });
     }
 
     setLoading(false);
+  };
+
+  const handleTestApiKey = async () => {
+    if (!hasApiKey) {
+      setTestResult({ type: 'error', message: 'Please save an API key first' });
+      return;
+    }
+
+    setTesting(true);
+    setTestResult({ type: '', message: '' });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('test-api-key', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setTestResult({ type: 'success', message: data.message || 'API key is working!' });
+        // Reload API key status to get updated validation info
+        loadApiKeyStatus();
+      } else {
+        setTestResult({ type: 'error', message: data?.error || 'Test failed' });
+      }
+    } catch (error) {
+      console.error('Error testing API key:', error);
+      setTestResult({ type: 'error', message: error.message || 'Failed to test API key' });
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -116,38 +150,58 @@ export default function Settings() {
                 ⚠ No API Key Set
               </div>
             )}
+            {hasApiKey && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                onClick={handleTestApiKey}
+                disabled={testing}
+              >
+                {testing ? 'Testing...' : 'Test API Key'}
+              </button>
+            )}
           </div>
+
+          {testResult.message && (
+            <div className={`message ${testResult.type}`} style={{ marginTop: '1rem' }}>
+              {testResult.message}
+            </div>
+          )}
 
           <form onSubmit={handleSaveApiKey} className="api-key-form">
             <div className="form-group">
               <label htmlFor="apiKey">
                 {hasApiKey ? 'Update API Key' : 'Enter API Key'}
               </label>
-              <input
-                id="apiKey"
-                type={showKey ? 'text' : 'password'}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="btn-secondary btn-small"
-                onClick={() => setShowKey(!showKey)}
-              >
-                {showKey ? 'Hide' : 'Show'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', width: '100%' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    id="apiKey"
+                    type={showKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk-ant-..."
+                    disabled={loading}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-small"
+                  onClick={() => setShowKey(!showKey)}
+                >
+                  {showKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
 
             <div className="button-group">
-              <button type="submit" className="btn-primary" disabled={loading}>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Saving...' : hasApiKey ? 'Update Key' : 'Save Key'}
               </button>
               {hasApiKey && (
                 <button
                   type="button"
-                  className="btn-danger"
+                  className="btn btn-danger"
                   onClick={handleRemoveApiKey}
                   disabled={loading}
                 >

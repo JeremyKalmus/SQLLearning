@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Play, CheckCircle, X, Lightbulb } from 'lucide-react';
 
 export default function Problems() {
   const { user } = useAuth();
@@ -144,7 +145,7 @@ export default function Problems() {
           <div className="alert alert-warning">
             <h3>API Key Required</h3>
             <p>You need to configure your Anthropic API key to use this feature.</p>
-            <a href="/settings" className="btn-primary">Go to Settings</a>
+            <a href="/settings" className="btn btn-primary">Go to Settings</a>
           </div>
         )}
 
@@ -157,7 +158,7 @@ export default function Problems() {
             <option value="expert">Expert</option>
           </select>
           <button
-            className="btn-primary"
+            className="btn btn-primary"
             onClick={generateProblem}
             disabled={executing || !hasApiKey}
           >
@@ -184,18 +185,20 @@ export default function Problems() {
           />
           <div className="query-actions">
             <button
-              className="btn-secondary"
+              className="btn btn-secondary"
               onClick={executeQuery}
               disabled={executing || !query.trim()}
             >
+              <Play className="icon icon-md" />
               Run Query
             </button>
             <button
-              className="btn-primary"
+              className="btn btn-success"
               onClick={checkAnswer}
               disabled={executing || !query.trim() || !problem}
             >
-              Check Answer
+              <CheckCircle className="icon icon-md" />
+              Submit for Review
             </button>
           </div>
         </div>
@@ -255,163 +258,6 @@ export default function Problems() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .problems-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-
-        .problems-container h1 {
-          margin-bottom: 2rem;
-        }
-
-        .difficulty-selector {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-        }
-
-        .difficulty-selector label {
-          font-weight: 600;
-        }
-
-        .difficulty-selector select {
-          padding: 0.5rem 1rem;
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          font-size: 1rem;
-        }
-
-        .problem-card {
-          background: white;
-          padding: 2rem;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow);
-          margin-bottom: 2rem;
-        }
-
-        .problem-card h2 {
-          margin-bottom: 0.5rem;
-        }
-
-        .problem-difficulty {
-          color: var(--primary);
-          font-size: 0.875rem;
-          font-weight: 600;
-          margin-bottom: 1rem;
-        }
-
-        .problem-description {
-          color: var(--text-secondary);
-          line-height: 1.6;
-        }
-
-        .query-editor {
-          background: white;
-          padding: 2rem;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow);
-          margin-bottom: 2rem;
-        }
-
-        .query-editor label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-        }
-
-        .query-editor textarea {
-          width: 100%;
-          padding: 1rem;
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          font-family: 'Courier New', monospace;
-          font-size: 0.875rem;
-          resize: vertical;
-        }
-
-        .query-actions {
-          display: flex;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .result-panel,
-        .feedback-panel {
-          background: white;
-          padding: 2rem;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow);
-          margin-bottom: 2rem;
-        }
-
-        .result-panel h3,
-        .feedback-panel h3 {
-          margin-bottom: 1rem;
-        }
-
-        .result-table-container {
-          overflow-x: auto;
-        }
-
-        .result-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .result-table th,
-        .result-table td {
-          padding: 0.75rem;
-          text-align: left;
-          border: 1px solid var(--border);
-        }
-
-        .result-table th {
-          background: var(--background);
-          font-weight: 600;
-        }
-
-        .feedback-panel.success {
-          border-left: 4px solid var(--success);
-        }
-
-        .feedback-panel.info {
-          border-left: 4px solid var(--warning);
-        }
-
-        .feedback-score {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: var(--primary);
-          margin-bottom: 1rem;
-        }
-
-        .feedback-message {
-          margin-bottom: 1rem;
-          line-height: 1.6;
-        }
-
-        .feedback-praise,
-        .feedback-improvements {
-          margin-top: 1rem;
-          padding: 1rem;
-          background: var(--background);
-          border-radius: var(--radius);
-        }
-
-        .feedback-improvements ul {
-          margin-top: 0.5rem;
-          margin-left: 1.5rem;
-        }
-
-        .feedback-improvements li {
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,0 +1,12 @@
+/* Main CSS Import File */
+@import url('base.css');
+@import url('components/header.css');
+@import url('components/buttons.css');
+@import url('components/cards.css');
+@import url('components/modal.css');
+@import url('components/tables.css');
+@import url('pages/home.css');
+@import url('pages/problems.css');
+@import url('pages/flashcards.css');
+
+

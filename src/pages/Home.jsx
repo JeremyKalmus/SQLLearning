@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Target, Flame, Lightbulb, BookOpen, Code } from 'lucide-react';
 
 export default function Home() {
   const { user } = useAuth();
@@ -79,7 +80,7 @@ export default function Home() {
             <p>
               To use AI-powered features, you need to configure your Anthropic API key.
             </p>
-            <Link to="/settings" className="btn-primary">
+            <Link to="/settings" className="btn btn-primary">
               Configure API Key
             </Link>
           </div>
@@ -87,7 +88,9 @@ export default function Home() {
 
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">🎯</div>
+            <div className="stat-icon">
+              <Target size={40} />
+            </div>
             <div className="stat-content">
               <h3>Level {calculateLevel(stats?.total_xp || 0)}</h3>
               <p>{xpForNextLevel(stats?.total_xp || 0)} XP to next level</p>
@@ -103,7 +106,9 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">🔥</div>
+            <div className="stat-icon">
+              <Flame size={40} />
+            </div>
             <div className="stat-content">
               <h3>{stats?.current_streak || 0} Day Streak</h3>
               <p>Longest: {stats?.longest_streak || 0} days</p>
@@ -111,7 +116,9 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">💡</div>
+            <div className="stat-icon">
+              <Lightbulb size={40} />
+            </div>
             <div className="stat-content">
               <h3>{stats?.total_problems_solved || 0} Problems Solved</h3>
               <p>Out of {stats?.total_problems_attempted || 0} attempted</p>
@@ -119,7 +126,9 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">📖</div>
+            <div className="stat-icon">
+              <BookOpen size={40} />
+            </div>
             <div className="stat-content">
               <h3>{stats?.total_flashcards_reviewed || 0} Flashcards</h3>
               <p>Reviewed</p>
@@ -131,13 +140,17 @@ export default function Home() {
           <h2>What would you like to do?</h2>
           <div className="action-cards">
             <Link to="/flashcards" className="action-card">
-              <div className="action-icon">📚</div>
+              <div className="action-icon">
+                <BookOpen size={36} />
+              </div>
               <h3>Practice Flashcards</h3>
               <p>Review SQL concepts and syntax</p>
             </Link>
 
             <Link to="/problems" className="action-card">
-              <div className="action-icon">💻</div>
+              <div className="action-icon">
+                <Code size={36} />
+              </div>
               <h3>Solve Problems</h3>
               <p>Practice with AI-generated SQL challenges</p>
             </Link>

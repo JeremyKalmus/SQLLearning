@@ -23,3 +23,4 @@ if __name__ == '__main__':
     print("Database regenerated successfully!")
     print(f"Location: {db_path}")
 
+
