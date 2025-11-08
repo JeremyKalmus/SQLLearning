@@ -90,7 +90,7 @@ Make the wrong answers educational - they should help students learn by understa
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-4-5-haiku-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 500,
         messages: [{
           role: "user",
