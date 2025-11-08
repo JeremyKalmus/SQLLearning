@@ -19,12 +19,20 @@ BEGIN
   END IF;
 
   -- Execute the query and return results as JSON
+  -- Note: We use %s (not %I) because sql_query contains a full SQL statement, not an identifier
+  -- format() with %s will properly escape special characters
   EXECUTE format('SELECT json_agg(row_to_json(t)) FROM (%s) t', sql_query) INTO result;
   
-  RETURN COALESCE(result, '[]'::json);
+  -- If result is null (no rows), return empty array
+  IF result IS NULL THEN
+    RETURN '[]'::json;
+  END IF;
+  
+  RETURN result;
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE EXCEPTION 'SQL Error: %', SQLERRM;
+    -- Provide more detailed error information
+    RAISE EXCEPTION 'SQL Error: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
 END;
 $$;
 

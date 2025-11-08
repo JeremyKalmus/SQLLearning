@@ -58,11 +58,22 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error) {
-      throw new Error(error.message);
+      console.error('RPC Error:', error);
+      throw new Error(error.message || `Database error: ${JSON.stringify(error)}`);
+    }
+
+    // Handle case where data might be a JSON string or already parsed
+    let rows = data;
+    if (typeof data === 'string') {
+      try {
+        rows = JSON.parse(data);
+      } catch (e) {
+        rows = data;
+      }
     }
 
     return new Response(
-      JSON.stringify({ rows: data, rowCount: data?.length || 0 }),
+      JSON.stringify({ rows: rows || [], rowCount: Array.isArray(rows) ? rows.length : 0 }),
       {
         headers: {
           ...corsHeaders,
@@ -70,9 +81,11 @@ Deno.serve(async (req: Request) => {
         },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Execute query error:', error);
+    const errorMessage = error.message || error.error || 'Failed to execute query';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 400,
         headers: {
