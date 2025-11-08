@@ -183,14 +183,12 @@ export default function Problems() {
       // Check if a problem with the same title already exists for this user
       const { data: existingProblems } = await supabase
         .from('saved_problems')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
+        .select('problem_data')
+        .eq('user_id', user.id);
       
-      // Only save if it's a new problem (different title) or if no problems exist yet
+      // Only save if it's a new problem (different title)
       const isDuplicate = existingProblems?.some((sp: any) => {
-        const existingData = sp.problem_data || (existingProblems as any).find((p: any) => p.problem_data?.title === data.title);
-        return existingData?.title === data.title;
+        return sp.problem_data?.title === data.title;
       });
       
       if (!isDuplicate) {
