@@ -31,11 +31,14 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { query } = await req.json();
+    let { query } = await req.json();
 
     if (!query || typeof query !== "string") {
       throw new Error("Query is required");
     }
+
+    // Strip trailing semicolons to avoid SQL errors
+    query = query.trim().replace(/;+$/, '');
 
     const upperQuery = query.trim().toUpperCase();
     const dangerousKeywords = [

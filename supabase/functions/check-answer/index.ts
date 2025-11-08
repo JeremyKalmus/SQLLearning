@@ -43,9 +43,26 @@ Deno.serve(async (req: Request) => {
       throw new Error("API key not configured");
     }
 
+    // Fetch database schema
+    const schemaResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/get-schema`, {
+      method: "GET",
+      headers: {
+        "Authorization": req.headers.get("Authorization")!,
+        "Content-Type": "application/json",
+      },
+    });
+
+    let schemaInfo = "";
+    if (schemaResponse.ok) {
+      const schemaData = await schemaResponse.json();
+      schemaInfo = `\n\n**Database Schema**:\n${JSON.stringify(schemaData, null, 2)}`;
+    }
+
     const prompt = `You are a SQL tutor checking a student's answer.
 
 **Problem**: ${problem_description}
+
+**Database Schema**:${schemaInfo}
 
 **Student's Query**:
 \`\`\`sql
@@ -56,6 +73,8 @@ Analyze the student's query and provide feedback. Consider:
 1. Does it solve the problem correctly?
 2. Is the approach efficient and follows best practices?
 3. Are there any errors or improvements needed?
+4. Does the query reference correct table and column names from the schema?
+5. Are the data types used correctly (e.g., using text columns for string comparisons, numeric columns for calculations)?
 
 Return a JSON object with:
 - "correct": boolean (true if query is correct and efficient)

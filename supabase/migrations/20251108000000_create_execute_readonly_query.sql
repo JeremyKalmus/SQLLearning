@@ -18,7 +18,13 @@ BEGIN
     RAISE EXCEPTION 'Dangerous keyword detected. Only SELECT and WITH (CTEs) are allowed.';
   END IF;
 
-  -- Execute the query and return results as JSON
+  -- Strip trailing semicolons if present
+  sql_query := rtrim(sql_query, '; ');
+  
+  -- Execute the query and return results as JSON with column order preserved
+  -- Using row_to_json preserves the column order from the SELECT statement
+  -- PostgreSQL's row_to_json maintains the exact column order as specified in SELECT
+  -- JavaScript objects preserve insertion order (ES2015+), so the order will be maintained
   -- Since we've already validated the query is safe (SELECT/WITH only, no dangerous keywords),
   -- we can safely use string concatenation for dynamic SQL execution
   EXECUTE 'SELECT json_agg(row_to_json(t)) FROM (' || sql_query || ') t' INTO result;

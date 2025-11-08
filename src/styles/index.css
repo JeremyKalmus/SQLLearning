@@ -347,6 +347,20 @@ header h1,
     color: white;
 }
 
+.btn-link {
+    background: none;
+    color: var(--primary-color);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-decoration: underline;
+    border: none;
+    font-weight: 500;
+}
+
+.btn-link:hover:not(:disabled) {
+    color: var(--primary-hover);
+    text-decoration: none;
+}
+
 .btn-hint:hover:not(:disabled) {
     background: #d97706;
     transform: translateY(-1px);
@@ -1519,11 +1533,31 @@ header h1,
     background: #78350f;
 }
 
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.feedback-header h4 {
+    margin: 0;
+    color: var(--text-color);
+}
+
 .feedback-score {
     font-size: 24px;
     font-weight: bold;
     color: var(--primary-color);
-    margin-bottom: 15px;
+    margin: 0;
+}
+
+.feedback-summary {
+    margin-top: var(--spacing-md);
+}
+
+.feedback-details {
+    margin-top: var(--spacing-md);
 }
 
 .feedback-message {

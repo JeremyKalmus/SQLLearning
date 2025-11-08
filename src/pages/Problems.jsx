@@ -20,6 +20,7 @@ export default function Problems() {
   const [loadingSavedProblems, setLoadingSavedProblems] = useState(false);
   const [previewTable, setPreviewTable] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showFeedbackDetails, setShowFeedbackDetails] = useState(false);
 
   useEffect(() => {
     checkApiKey();
@@ -281,6 +282,7 @@ export default function Problems() {
 
       if (error) throw error;
       setFeedback(data);
+      setShowFeedbackDetails(false); // Reset to collapsed state
 
       await supabase.from('problem_history').insert({
         user_id: user.id,
@@ -567,22 +569,44 @@ export default function Problems() {
             {feedback && (
               <div className={`feedback-panel ${feedback.correct ? 'success' : 'info'}`}>
                 <div className="feedback-content">
-                  <h4>Feedback:</h4>
-                  <div className="feedback-score">Score: {feedback.score}/100</div>
-                  <div className="feedback-message">{feedback.message}</div>
-                  {feedback.praise && (
-                    <div className="feedback-praise">
-                      <strong>What you did well:</strong> {feedback.praise}
+                  <div className="feedback-header">
+                    <h4>Feedback</h4>
+                    <div className="feedback-score">Score: {feedback.score}/100</div>
+                  </div>
+                  {!showFeedbackDetails && (
+                    <div className="feedback-summary">
+                      <button
+                        className="btn btn-link"
+                        onClick={() => setShowFeedbackDetails(true)}
+                      >
+                        Click to view detailed feedback
+                      </button>
                     </div>
                   )}
-                  {feedback.improvements && feedback.improvements.length > 0 && (
-                    <div className="feedback-improvements">
-                      <strong>Suggestions for improvement:</strong>
-                      <ul>
-                        {feedback.improvements.map((improvement, i) => (
-                          <li key={i}>{improvement}</li>
-                        ))}
-                      </ul>
+                  {showFeedbackDetails && (
+                    <div className="feedback-details">
+                      <div className="feedback-message">{feedback.message}</div>
+                      {feedback.praise && (
+                        <div className="feedback-praise">
+                          <strong>What you did well:</strong> {feedback.praise}
+                        </div>
+                      )}
+                      {feedback.improvements && feedback.improvements.length > 0 && (
+                        <div className="feedback-improvements">
+                          <strong>Suggestions for improvement:</strong>
+                          <ul>
+                            {feedback.improvements.map((improvement, i) => (
+                              <li key={i}>{improvement}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <button
+                        className="btn btn-link btn-small"
+                        onClick={() => setShowFeedbackDetails(false)}
+                      >
+                        Hide details
+                      </button>
                     </div>
                   )}
                 </div>
@@ -594,6 +618,7 @@ export default function Problems() {
                       setResult(null);
                       setFeedback(null);
                       setQuery('');
+                      setShowFeedbackDetails(false);
                     }}
                   >
                     Next Problem
