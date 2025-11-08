@@ -54,7 +54,7 @@ window.submitQuery = async function() {
         return;
     }
 
-    Loading.show('Reviewing your query...', true);
+    Loading.show('Checking your answer...');
 
     try {
         const feedback = await ProblemsAPI.check(
@@ -65,13 +65,13 @@ window.submitQuery = async function() {
             ProblemState.currentProblem.topic
         );
 
-        Loading.completeProgress();
         FeedbackDisplay.show(feedback);
         SavedProblems.load(); // Reload saved problems to show updated score
     } catch (error) {
         console.error('Error submitting query:', error);
-        Loading.hide();
         alert(`Error submitting query: ${error.message || 'Please try again.'}`);
+    } finally {
+        Loading.hide();
     }
 };
 
