@@ -16,19 +16,45 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
-    );
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing Authorization header" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("Unauthorized");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Supabase configuration missing" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized: " + (authError?.message || "User not found") }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Get user's API key
@@ -38,8 +64,24 @@ Deno.serve(async (req: Request) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (apiKeyError || !apiKeyData?.encrypted_api_key) {
-      throw new Error("API key not configured");
+    if (apiKeyError) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Database error: ${apiKeyError.message}` }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!apiKeyData?.encrypted_api_key) {
+      return new Response(
+        JSON.stringify({ success: false, error: "API key not configured. Please save your API key first." }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Make a minimal test call to Anthropic API
@@ -99,36 +141,36 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Test API key error:", error);
     
-    // Update validation status on error
+    // Try to update validation status on error, but don't fail if it doesn't work
     try {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        {
-          global: {
-            headers: { Authorization: req.headers.get("Authorization")! },
-          },
+      const authHeader = req.headers.get("Authorization");
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      
+      if (authHeader && supabaseUrl && supabaseAnonKey) {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from("user_api_keys")
+            .update({
+              is_valid: false,
+              last_validated: new Date().toISOString(),
+            })
+            .eq("user_id", user.id);
         }
-      );
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("user_api_keys")
-          .update({
-            is_valid: false,
-            last_validated: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
       }
     } catch (updateError) {
-      // Ignore update errors
+      console.error("Failed to update validation status:", updateError);
     }
 
-    // Return 200 with error details so frontend can handle it properly
+    // Always return 200 with error details so frontend can handle it properly
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || String(error),
+        error: error?.message || String(error) || "Unknown error occurred",
       }),
       {
         status: 200,
