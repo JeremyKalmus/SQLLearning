@@ -1,11 +1,29 @@
 // Query editor component
 const QueryEditor = {
     getQuery() {
-        return document.getElementById('sql-query').value.trim();
+        // Try to get from CodeMirror first, fallback to textarea for backwards compatibility
+        if (window.sqlEditorView) {
+            return window.sqlEditorView.state.doc.toString().trim();
+        }
+        const textarea = document.getElementById('sql-query');
+        return textarea ? textarea.value.trim() : '';
     },
 
     setQuery(query) {
-        document.getElementById('sql-query').value = query || '';
+        // Try to set in CodeMirror first, fallback to textarea for backwards compatibility
+        if (window.sqlEditorView) {
+            const transaction = window.sqlEditorView.state.update({
+                changes: {
+                    from: 0,
+                    to: window.sqlEditorView.state.doc.length,
+                    insert: query || ''
+                }
+            });
+            window.sqlEditorView.dispatch(transaction);
+        } else {
+            const textarea = document.getElementById('sql-query');
+            if (textarea) textarea.value = query || '';
+        }
     },
 
     clear() {
