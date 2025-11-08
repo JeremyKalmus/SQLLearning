@@ -273,7 +273,7 @@ export default function Problems() {
       // Get user statistics before checking answer
       const { data: statsData } = await supabase
         .from('user_statistics')
-        .select('total_problems_solved, total_xp')
+        .select('total_problems_attempted, total_problems_solved, total_xp')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -306,12 +306,7 @@ export default function Problems() {
         correct: data.correct || false
       });
 
-      // Update statistics using RPC or direct update
-      const { data: statsData } = await supabase
-        .from('user_statistics')
-        .select('total_problems_attempted, total_problems_solved, total_xp')
-        .eq('user_id', user.id)
-        .single();
+      // Update statistics using the statsData we already fetched
 
       if (statsData) {
         await supabase
