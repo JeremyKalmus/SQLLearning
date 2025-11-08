@@ -11,6 +11,7 @@ export default function Flashcards() {
   const [showOptions, setShowOptions] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [options, setOptions] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   const cards = flashcardsData[selectedLevel] || [];
   const currentCard = cards[currentIndex];
@@ -26,6 +27,7 @@ export default function Flashcards() {
     setShowOptions(false);
     setSelectedOption(null);
     setOptions([]);
+    setLoadingOptions(false);
   }, [currentIndex]);
 
   const handleLevelChange = (level) => {
@@ -50,6 +52,7 @@ export default function Flashcards() {
 
   const handleShowOptions = async () => {
     if (options.length === 0) {
+      setLoadingOptions(true);
       try {
         // Generate options using AI
         const { data, error } = await supabase.functions.invoke('generate-flashcard-options', {
@@ -62,11 +65,22 @@ export default function Flashcards() {
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
+        }
+
+        // Check if the response contains an error message
+        if (data?.error) {
+          console.error('API returned error:', data.error);
+          throw new Error(data.error);
+        }
         
-        if (data?.options) {
+        if (data?.options && Array.isArray(data.options) && data.options.length > 0) {
+          console.log('Options received:', data.options);
           setOptions(data.options);
         } else {
+          console.warn('No valid options received, using fallback. Data:', data);
           // Fallback to simple options if AI generation fails
           const correctOption = { text: currentCard.answer, correct: true };
           const wrongOptions = [
@@ -86,6 +100,8 @@ export default function Flashcards() {
           { text: 'Option C', correct: false }
         ];
         setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
+      } finally {
+        setLoadingOptions(false);
       }
     }
     setShowOptions(true);
@@ -228,28 +244,36 @@ export default function Flashcards() {
         {showOptions && (
           <div className="options-container">
             <h3>Select the correct answer:</h3>
-            <div className="options-grid">
-              {options.map((option, index) => (
-                <button
-                  key={index}
-                  className={`option-btn ${
-                    selectedOption === index
-                      ? option.correct
-                        ? 'correct'
-                        : 'incorrect'
-                      : ''
-                  }`}
-                  onClick={() => handleOptionSelect(option, index)}
-                  disabled={selectedOption !== null}
-                >
-                  {option.text}
-                </button>
-              ))}
-            </div>
-            {selectedOption !== null && (
-              <button className="btn btn-primary" onClick={handleNext}>
-                Next Card
-              </button>
+            {loadingOptions ? (
+              <div>Loading options...</div>
+            ) : options.length === 0 ? (
+              <div>No options available. Please try again.</div>
+            ) : (
+              <>
+                <div className="options-grid">
+                  {options.map((option, index) => (
+                    <button
+                      key={index}
+                      className={`option-btn ${
+                        selectedOption === index
+                          ? option.correct
+                            ? 'correct'
+                            : 'incorrect'
+                          : ''
+                      }`}
+                      onClick={() => handleOptionSelect(option, index)}
+                      disabled={selectedOption !== null}
+                    >
+                      {option.text}
+                    </button>
+                  ))}
+                </div>
+                {selectedOption !== null && (
+                  <button className="btn btn-primary" onClick={handleNext}>
+                    Next Card
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
