@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase';
 import { Play, CheckCircle, X, Lightbulb, ArrowLeft, Trash2, Target } from 'lucide-react';
 import SchemaViewer from '../components/SchemaViewer';
 import TablePreviewModal from '../components/TablePreviewModal';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql } from '@codemirror/lang-sql';
+import { oneDark } from '@codemirror/theme-one-dark';
 
 export default function Problems() {
   const { user } = useAuth();
@@ -21,6 +24,9 @@ export default function Problems() {
   const [previewTable, setPreviewTable] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showFeedbackDetails, setShowFeedbackDetails] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [showProgress, setShowProgress] = useState(false);
 
   useEffect(() => {
     checkApiKey();
@@ -32,6 +38,34 @@ export default function Problems() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, user]);
+
+  // Progress animation effect
+  useEffect(() => {
+    let interval;
+    if (showProgress && progress < 90) {
+      interval = setInterval(() => {
+        setProgress(prev => {
+          const increment = Math.max(1, (90 - prev) / 10);
+          return Math.min(90, prev + increment);
+        });
+      }, 200);
+    }
+    return () => clearInterval(interval);
+  }, [showProgress, progress]);
+
+  const startProgress = (message) => {
+    setProgressMessage(message);
+    setProgress(0);
+    setShowProgress(true);
+  };
+
+  const completeProgress = () => {
+    setProgress(100);
+    setTimeout(() => {
+      setShowProgress(false);
+      setProgress(0);
+    }, 500);
+  };
 
   const checkApiKey = async () => {
     const { data } = await supabase
@@ -172,6 +206,7 @@ export default function Problems() {
     setQuery('');
     setResult(null);
     setFeedback(null);
+    startProgress('Generating your problem...');
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-problem', {
@@ -179,13 +214,13 @@ export default function Problems() {
       });
 
       if (error) throw error;
-      
+
       // Check if a problem with the same title already exists for this user
       const { data: existingProblems } = await supabase
         .from('saved_problems')
         .select('problem_data')
         .eq('user_id', user.id);
-      
+
       // Only save if it's a new problem (different title)
       let isDuplicate = false;
       if (existingProblems && Array.isArray(existingProblems)) {
@@ -193,7 +228,7 @@ export default function Problems() {
           return sp && sp.problem_data && sp.problem_data.title === data.title;
         });
       }
-      
+
       if (!isDuplicate) {
         // Save the problem
         const { error: saveError } = await supabase
@@ -208,11 +243,13 @@ export default function Problems() {
         }
       }
 
+      completeProgress();
       setProblem(data);
       setView('workspace');
       loadSavedProblems(); // Reload saved problems list
     } catch (error) {
       console.error('Error generating problem:', error);
+      setShowProgress(false);
       alert('Failed to generate problem. Please check your API key and try again.');
     } finally {
       setExecuting(false);
@@ -284,6 +321,7 @@ export default function Problems() {
     }
 
     setExecuting(true);
+    startProgress('Reviewing your query...');
 
     try {
       // Get user statistics before checking answer
@@ -309,6 +347,8 @@ export default function Problems() {
       });
 
       if (error) throw error;
+
+      completeProgress();
       setFeedback(data);
       setShowFeedbackDetails(false); // Reset to collapsed state
 
@@ -342,6 +382,7 @@ export default function Problems() {
       }
     } catch (error) {
       console.error('Error checking answer:', error);
+      setShowProgress(false);
       alert('Failed to check answer. Please try again.');
     } finally {
       setExecuting(false);
@@ -518,13 +559,32 @@ export default function Problems() {
 
               <div className="query-editor">
                 <h4>Your SQL Query</h4>
-                <textarea
-                  id="sql-query"
+                <CodeMirror
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="-- Write your SQL query here...&#10;SELECT * FROM customers;"
-                  rows={10}
-                  disabled={executing}
+                  height="300px"
+                  extensions={[sql()]}
+                  theme={oneDark}
+                  onChange={(value) => setQuery(value)}
+                  placeholder="-- Write your SQL query here...\nSELECT * FROM customers;"
+                  editable={!executing}
+                  basicSetup={{
+                    lineNumbers: true,
+                    highlightActiveLineGutter: true,
+                    highlightActiveLine: true,
+                    foldGutter: true,
+                    dropCursor: true,
+                    indentOnInput: true,
+                    bracketMatching: true,
+                    closeBrackets: true,
+                    autocompletion: true,
+                    highlightSelectionMatches: true,
+                  }}
+                  style={{
+                    fontSize: '14px',
+                    border: '2px solid var(--border-color)',
+                    borderRadius: 'var(--radius-lg)',
+                    overflow: 'hidden',
+                  }}
                 />
                 <div className="editor-actions">
                   <div className="editor-actions-left">
@@ -667,6 +727,21 @@ export default function Problems() {
           setPreviewTable(null);
         }}
       />
+
+      {showProgress && (
+        <div className="progress-overlay">
+          <div className="progress-content">
+            <div className="loading-spinner"></div>
+            <p className="progress-message">{progressMessage}</p>
+            <div className="progress-bar-container">
+              <div className="progress-bar">
+                <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+              </div>
+              <p className="progress-text">{Math.round(progress)}%</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
