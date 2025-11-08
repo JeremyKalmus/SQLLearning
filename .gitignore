@@ -1,6 +1,11 @@
 # Environment variables
 .env
 
+# Node.js
+node_modules/
+dist/
+*.local
+
 # Python
 __pycache__/
 *.py[cod]
