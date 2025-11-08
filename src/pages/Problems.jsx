@@ -214,14 +214,23 @@ export default function Problems() {
 
     try {
       const { data, error } = await supabase.functions.invoke('execute-query', {
-        body: { query, user_id: user.id }
+        body: { query }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+      
+      // Check if the response contains an error
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      
       setResult(data);
     } catch (error) {
       console.error('Error executing query:', error);
-      setResult({ error: error.message });
+      const errorMessage = error.message || error.error || 'Failed to execute query. Please check your SQL syntax.';
+      setResult({ error: errorMessage });
     } finally {
       setExecuting(false);
     }

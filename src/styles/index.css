@@ -1481,7 +1481,7 @@ header h1,
     padding: var(--spacing-xl);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow);
-    margin-top: var(--spacing-3xl);
+    margin-top: var(--spacing-lg);
 }
 
 .query-results h3,
