@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import flashcardsData from '../data/flashcards.json';
 
 export default function Flashcards() {
   const { user } = useAuth();
   const [selectedLevel, setSelectedLevel] = useState('basic');
+  const [cards, setCards] = useState([]);
+  const [shuffledIndices, setShuffledIndices] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -14,25 +15,247 @@ export default function Flashcards() {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [cardProgress, setCardProgress] = useState(null);
   const [sessionStats, setSessionStats] = useState({ reviewed: 0, correct: 0 });
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [totalCardsInDb, setTotalCardsInDb] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
-  const cards = flashcardsData[selectedLevel] || [];
-  const currentCard = cards[currentIndex];
+  // Get current card using shuffled indices
+  const currentCard = shuffledIndices.length > 0 && cards.length > 0 
+    ? cards[shuffledIndices[currentIndex]] 
+    : null;
+
+  // Shuffle array helper
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Load flashcards from database
+  const loadFlashcards = useCallback(async (level, offset = 0, limit = 5, updateLoadingState = true) => {
+    try {
+      if (updateLoadingState) {
+        setLoadingCards(true);
+      }
+      
+      // Get total count of cards in database for this level (only if updating state)
+      if (updateLoadingState) {
+        const { count: totalCount } = await supabase
+          .from('flashcards')
+          .select('*', { count: 'exact', head: true })
+          .eq('level', level);
+        
+        setTotalCardsInDb(totalCount || 0);
+      }
+
+      // Fetch cards (prioritize non-AI generated, then by created_at)
+      const { data, error } = await supabase
+        .from('flashcards')
+        .select('*')
+        .eq('level', level)
+        .order('is_ai_generated', { ascending: true })
+        .order('created_at', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error loading flashcards:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error loading flashcards:', error);
+      return [];
+    } finally {
+      if (updateLoadingState) {
+        setLoadingCards(false);
+      }
+    }
+  }, []);
+
+  // Load initial batch when level changes
+  useEffect(() => {
+    const fetchInitialCards = async () => {
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setShowOptions(false);
+      setSelectedOption(null);
+      setOptions([]);
+      setCardProgress(null);
+      
+      const fetchedCards = await loadFlashcards(selectedLevel, 0, 5);
+      setCards(fetchedCards);
+      
+      // Shuffle indices
+      if (fetchedCards.length > 0) {
+        const indices = shuffleArray(fetchedCards.map((_, i) => i));
+        setShuffledIndices(indices);
+      } else {
+        setShuffledIndices([]);
+      }
+    };
+
+    fetchInitialCards();
+  }, [selectedLevel, loadFlashcards]);
+
+  // Check if current batch is completed (all cards have times_correct > 0)
+  const checkCurrentBatchCompletion = useCallback(async () => {
+    if (!user || cards.length === 0) return false;
+
+    const cardIds = cards.map(card => card.id);
+    const { data: progressData } = await supabase
+      .from('flashcard_progress')
+      .select('card_id, times_correct')
+      .eq('user_id', user.id)
+      .in('card_id', cardIds);
+
+    if (!progressData || progressData.length === 0) return false;
+
+    const progressMap = new Map(progressData.map(p => [p.card_id, p.times_correct]));
+    return cardIds.every(id => (progressMap.get(id) || 0) > 0);
+  }, [user, cards]);
+
+  // Check if all database cards for this level are completed
+  const checkAllDatabaseCardsCompleted = useCallback(async () => {
+    if (!user) return false;
+
+    const { data: allCards } = await supabase
+      .from('flashcards')
+      .select('id')
+      .eq('level', selectedLevel);
+
+    if (!allCards || allCards.length === 0) return false;
+
+    const cardIds = allCards.map(card => card.id);
+    const { data: progressData } = await supabase
+      .from('flashcard_progress')
+      .select('card_id, times_correct')
+      .eq('user_id', user.id)
+      .in('card_id', cardIds);
+
+    if (!progressData) return false;
+
+    const progressMap = new Map(progressData.map(p => [p.card_id, p.times_correct]));
+    return cardIds.every(id => (progressMap.get(id) || 0) > 0);
+  }, [user, selectedLevel]);
+
+  // Load more cards from database
+  const handleLoadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      // Get total count first
+      const { count: totalCount } = await supabase
+        .from('flashcards')
+        .select('*', { count: 'exact', head: true })
+        .eq('level', selectedLevel);
+      
+      setTotalCardsInDb(totalCount || 0);
+
+      // Fetch next batch (don't update loading state, we use loadingMore)
+      const nextBatch = await loadFlashcards(selectedLevel, cards.length, 5, false);
+      if (nextBatch.length > 0) {
+        const newCards = [...cards, ...nextBatch];
+        setCards(newCards);
+        
+        // Re-shuffle all cards including new ones
+        const indices = shuffleArray(newCards.map((_, i) => i));
+        setShuffledIndices(indices);
+        setCurrentIndex(0);
+      }
+    } catch (error) {
+      console.error('Error loading more cards:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cards, selectedLevel, loadFlashcards]);
+
+  // Generate new flashcards
+  const handleGenerateFlashcards = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-flashcard', {
+        body: {
+          level: selectedLevel,
+          count: 5
+        }
+      });
+
+      if (error) {
+        console.error('Error generating flashcards:', error);
+        alert('Failed to generate flashcards: ' + error.message);
+        return;
+      }
+
+      if (data?.error) {
+        console.error('Generation error:', data.error);
+        alert('Failed to generate flashcards: ' + data.error);
+        return;
+      }
+
+      // Reload cards to include newly generated ones
+      // Get updated total count
+      const { count: totalCount } = await supabase
+        .from('flashcards')
+        .select('*', { count: 'exact', head: true })
+        .eq('level', selectedLevel);
+      
+      setTotalCardsInDb(totalCount || 0);
+
+      // Reload all cards (fetch all available)
+      const fetchedCards = await loadFlashcards(selectedLevel, 0, totalCount || 1000, false);
+      setCards(fetchedCards);
+      
+      // Re-shuffle
+      if (fetchedCards.length > 0) {
+        const indices = shuffleArray(fetchedCards.map((_, i) => i));
+        setShuffledIndices(indices);
+        setCurrentIndex(0);
+      }
+    } catch (error) {
+      console.error('Error generating flashcards:', error);
+      alert('Failed to generate flashcards: ' + error.message);
+    } finally {
+      setGenerating(false);
+    }
+  }, [selectedLevel, cards.length, loadFlashcards]);
+
+  // Check completion status and show appropriate UI
+  const [batchCompleted, setBatchCompleted] = useState(false);
+  const [allCompleted, setAllCompleted] = useState(false);
 
   useEffect(() => {
-    setCurrentIndex(0);
-    setIsFlipped(false);
-    setShowOptions(false);
-  }, [selectedLevel]);
+    const checkCompletion = async () => {
+      if (!user || cards.length === 0) {
+        setBatchCompleted(false);
+        setAllCompleted(false);
+        return;
+      }
+
+      const batchDone = await checkCurrentBatchCompletion();
+      setBatchCompleted(batchDone);
+
+      if (batchDone) {
+        const allDone = await checkAllDatabaseCardsCompleted();
+        setAllCompleted(allDone);
+      } else {
+        setAllCompleted(false);
+      }
+    };
+
+    checkCompletion();
+  }, [user, cards, checkCurrentBatchCompletion, checkAllDatabaseCardsCompleted]);
 
   const loadOptionsForCard = useCallback(async () => {
     if (!currentCard) return;
     
-    // Store the card ID to check if card changed during async operation
     const cardIdToLoad = currentCard.id;
     
     setLoadingOptions(true);
     try {
-      // First check if options are cached in the database
       const { data: cachedData, error: cacheError } = await supabase
         .from('flashcard_options')
         .select('options')
@@ -40,9 +263,7 @@ export default function Flashcards() {
         .maybeSingle();
 
       if (!cacheError && cachedData?.options) {
-        // Use cached options - but only if card hasn't changed
         if (currentCard?.id === cardIdToLoad) {
-          console.log('Using cached options for card:', cardIdToLoad);
           setOptions(cachedData.options);
           setShowOptions(true);
         }
@@ -50,7 +271,6 @@ export default function Flashcards() {
         return;
       }
 
-      // If not cached, generate new options via API
       const { data, error } = await supabase.functions.invoke('generate-flashcard-options', {
         body: {
           card_id: cardIdToLoad,
@@ -66,25 +286,19 @@ export default function Flashcards() {
         throw error;
       }
 
-      // Check if the response contains an error message
       if (data?.error) {
         console.error('API returned error:', data.error);
         throw new Error(data.error);
       }
       
-      // Only set options if card hasn't changed during async operation
       if (currentCard?.id !== cardIdToLoad) {
-        console.log('Card changed during load, ignoring options');
         return;
       }
       
       if (data?.options && Array.isArray(data.options) && data.options.length > 0) {
-        console.log('Options received:', data.options);
         setOptions(data.options);
         setShowOptions(true);
       } else {
-        console.warn('No valid options received, using fallback. Data:', data);
-        // Fallback to simple options if AI generation fails
         const correctOption = { text: currentCard.answer, correct: true };
         const wrongOptions = [
           { text: 'Option A', correct: false },
@@ -95,10 +309,8 @@ export default function Flashcards() {
         setShowOptions(true);
       }
     } catch (error) {
-      // Only set fallback if card hasn't changed
       if (currentCard?.id === cardIdToLoad) {
         console.error('Error generating options:', error);
-        // Fallback to simple options
         const correctOption = { text: currentCard.answer, correct: true };
         const wrongOptions = [
           { text: 'Option A', correct: false },
@@ -128,7 +340,6 @@ export default function Flashcards() {
     if (!error && data) {
       setCardProgress(data);
     } else if (!error && !data) {
-      // Card hasn't been reviewed yet
       setCardProgress(null);
     }
   }, [currentCard, user]);
@@ -141,12 +352,10 @@ export default function Flashcards() {
     setLoadingOptions(false);
     setCardProgress(null);
     
-    // Load progress for current card
     if (currentCard && user) {
       loadCardProgress();
     }
     
-    // Automatically load options for the current card
     if (currentCard) {
       loadOptionsForCard();
     }
@@ -157,7 +366,7 @@ export default function Flashcards() {
   };
 
   const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
+    if (currentIndex < shuffledIndices.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
@@ -172,19 +381,15 @@ export default function Flashcards() {
     setIsFlipped(!isFlipped);
   };
 
-
   const handleOptionSelect = async (option, index) => {
-    // Allow changing selection if wrong answer was selected
     if (selectedOption !== null && options[selectedOption]?.correct === false) {
       setSelectedOption(index);
-      // Only update progress if selecting correct answer after wrong one
       if (option.correct) {
         await updateProgress(true);
       }
       return;
     }
     
-    // Don't allow changing if correct answer was already selected
     if (selectedOption !== null && options[selectedOption]?.correct === true) {
       return;
     }
@@ -196,7 +401,6 @@ export default function Flashcards() {
   const updateProgress = async (isCorrect) => {
     if (!user || !currentCard) return;
 
-    // Get current progress
     const { data: existingProgress } = await supabase
       .from('flashcard_progress')
       .select('times_seen, times_correct')
@@ -210,7 +414,6 @@ export default function Flashcards() {
     const newTimesSeen = currentTimesSeen + 1;
     const newTimesCorrect = isCorrect ? currentTimesCorrect + 1 : currentTimesCorrect;
 
-    // Update flashcard progress
     await supabase.from('flashcard_progress').upsert({
       user_id: user.id,
       card_id: currentCard.id,
@@ -224,16 +427,13 @@ export default function Flashcards() {
       ignoreDuplicates: false
     });
 
-    // Update card progress state
     setCardProgress({ times_seen: newTimesSeen, times_correct: newTimesCorrect });
 
-    // Update session stats
     setSessionStats(prev => ({
       reviewed: prev.reviewed + 1,
       correct: prev.correct + (isCorrect ? 1 : 0)
     }));
 
-    // Update user statistics
     await supabase.rpc('increment', {
       table_name: 'user_statistics',
       column_name: 'total_flashcards_reviewed',
@@ -245,37 +445,42 @@ export default function Flashcards() {
         updated_at: new Date().toISOString()
       }).eq('user_id', user.id);
     });
+
+    // Re-check completion after progress update
+    setTimeout(async () => {
+      const batchDone = await checkCurrentBatchCompletion();
+      setBatchCompleted(batchDone);
+      if (batchDone) {
+        const allDone = await checkAllDatabaseCardsCompleted();
+        setAllCompleted(allDone);
+      }
+    }, 100);
   };
 
-  const handleMarkCorrect = async (correct) => {
-    await supabase.from('flashcard_progress').upsert({
-      user_id: user.id,
-      card_id: currentCard.id,
-      times_seen: 1,
-      times_correct: correct ? 1 : 0,
-      last_seen: new Date().toISOString(),
-      topic: currentCard.topic,
-      level: currentCard.level
-    }, {
-      onConflict: 'user_id,card_id'
-    });
-
-    await supabase.from('user_statistics').update({
-      total_flashcards_reviewed: supabase.raw('total_flashcards_reviewed + 1'),
-      total_xp: supabase.raw(`total_xp + ${correct ? 5 : 2}`),
-      updated_at: new Date().toISOString()
-    }).eq('user_id', user.id);
-
-    if (currentIndex < cards.length - 1) {
-      handleNext();
-    }
-  };
+  if (loadingCards) {
+    return (
+      <div className="flashcards-page">
+        <div className="flashcards-container">
+          <h1>Loading flashcards...</h1>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentCard) {
     return (
       <div className="flashcards-page">
         <div className="flashcards-container">
           <h1>No flashcards available</h1>
+          {batchCompleted && allCompleted && (
+            <button 
+              className="btn btn-primary" 
+              onClick={handleGenerateFlashcards}
+              disabled={generating}
+            >
+              {generating ? 'Generating...' : 'Generate 5 More Flashcards'}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -338,6 +543,40 @@ export default function Flashcards() {
           </div>
         )}
 
+        {batchCompleted && (
+          <div className="completion-notice" style={{ 
+            padding: '1rem', 
+            margin: '1rem 0', 
+            backgroundColor: '#e8f5e9', 
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            {allCompleted ? (
+              <div>
+                <p>🎉 You've completed all available flashcards for this level!</p>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleGenerateFlashcards}
+                  disabled={generating}
+                >
+                  {generating ? 'Generating...' : 'Generate 5 More Flashcards'}
+                </button>
+              </div>
+            ) : cards.length < totalCardsInDb ? (
+              <div>
+                <p>Great job! You've completed this batch.</p>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Loading...' : 'Load More Cards'}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={handleFlip}>
           <div className="flashcard-inner">
             <div className="flashcard-front">
@@ -396,15 +635,6 @@ export default function Flashcards() {
                             Try Again
                           </button>
                         )}
-                        <button 
-                          className="btn btn-primary options-next-btn" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNext();
-                          }}
-                        >
-                          Next Card
-                        </button>
                       </div>
                     )}
                   </>
@@ -437,7 +667,7 @@ export default function Flashcards() {
           <button
             className="btn btn-secondary"
             onClick={handleNext}
-            disabled={currentIndex === cards.length - 1}
+            disabled={currentIndex >= shuffledIndices.length - 1}
           >
             Next
           </button>
