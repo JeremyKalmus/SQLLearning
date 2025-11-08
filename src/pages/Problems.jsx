@@ -213,23 +213,47 @@ export default function Problems() {
     setFeedback(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('execute-query', {
-        body: { query }
+      // Use fetch directly to get better error handling
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/execute-query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
       });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorMsg = result.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMsg);
       }
-      
+
       // Check if the response contains an error
-      if (data?.error) {
-        throw new Error(data.error);
+      if (result.error) {
+        throw new Error(result.error);
       }
       
-      setResult(data);
+      setResult(result);
     } catch (error) {
       console.error('Error executing query:', error);
-      const errorMessage = error.message || error.error || 'Failed to execute query. Please check your SQL syntax.';
+      let errorMessage = 'Failed to execute query. Please check your SQL syntax.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else {
+        errorMessage = String(error);
+      }
+      
       setResult({ error: errorMessage });
     } finally {
       setExecuting(false);
