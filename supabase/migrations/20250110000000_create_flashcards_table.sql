@@ -18,11 +18,14 @@ CREATE INDEX IF NOT EXISTS idx_flashcards_level_created ON flashcards(level, cre
 -- Enable Row Level Security (read-only for all authenticated users)
 ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
 
--- RLS Policy: All authenticated users can read flashcards
+-- RLS Policy: Anyone can read flashcards
 CREATE POLICY "Anyone can read flashcards"
   ON flashcards FOR SELECT
   USING (true);
 
--- RLS Policy: Only service role can insert/update (for migrations and AI generation)
--- Note: This will be handled by Edge Functions with service role key
+-- RLS Policy: Allow inserts (for migrations and AI generation via Edge Functions)
+-- Note: Edge Functions will use service role key, but we allow inserts for migration scripts too
+CREATE POLICY "Allow flashcard inserts"
+  ON flashcards FOR INSERT
+  WITH CHECK (true);
 

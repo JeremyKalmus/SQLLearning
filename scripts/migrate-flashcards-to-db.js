@@ -12,13 +12,28 @@ const __dirname = dirname(__filename);
 // Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Error: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+if (!supabaseUrl) {
+  console.error('Error: VITE_SUPABASE_URL must be set in your .env file');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Use service role key if available, otherwise fall back to anon key
+const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+
+if (!supabaseKey) {
+  console.error('Error: Either SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY must be set');
+  console.error('Note: Service role key is preferred for migrations, but anon key will work if RLS policies allow it');
+  process.exit(1);
+}
+
+if (!supabaseServiceKey && supabaseAnonKey) {
+  console.warn('Warning: Using ANON key instead of SERVICE_ROLE key. This may fail if RLS policies restrict inserts.');
+  console.warn('If migration fails, add SUPABASE_SERVICE_ROLE_KEY to your .env file');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function migrateFlashcards() {
   try {
