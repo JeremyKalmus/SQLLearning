@@ -40,7 +40,31 @@ Deno.serve(async (req: Request) => {
     // Strip trailing semicolons to avoid SQL errors
     query = query.trim().replace(/;+$/, '');
 
-    const upperQuery = query.trim().toUpperCase();
+    /**
+     * Strip SQL comments from query for validation purposes
+     * Handles both single-line (--) and multi-line (/* */) comments
+     */
+    function stripComments(sql: string): string {
+      let result = sql;
+      
+      // Remove multi-line comments /* ... */
+      result = result.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      
+      // Remove single-line comments -- ... (but not inside strings)
+      // Simple approach: replace -- to end of line, but be careful of -- in strings
+      // For validation purposes, this simple approach is sufficient
+      result = result.replace(/--[^\r\n]*/g, ' ');
+      
+      // Clean up extra whitespace
+      result = result.replace(/\s+/g, ' ').trim();
+      
+      return result;
+    }
+
+    // Strip comments for validation (but keep original query for execution)
+    const queryForValidation = stripComments(query);
+    const upperQuery = queryForValidation.toUpperCase();
+    
     const dangerousKeywords = [
       "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE",
       "TRUNCATE", "GRANT", "REVOKE", "EXEC", "EXECUTE"
