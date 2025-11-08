@@ -52,6 +52,58 @@ Deno.serve(async (req: Request) => {
 
     const difficultyDesc = difficultyMap[difficulty] || difficultyMap.basic;
 
+    // Fetch data statistics to provide context about actual data in tables
+    let dataStatsInfo = "";
+    try {
+      const statsResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/get-data-stats`, {
+        method: "GET",
+        headers: {
+          "Authorization": req.headers.get("Authorization")!,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        
+        // Format statistics into readable context
+        dataStatsInfo = "\n\n**IMPORTANT - Actual Data in Database**:\n";
+        dataStatsInfo += "Use ONLY these values that actually exist in the database. Do NOT create problems asking for values that don't exist.\n\n";
+        
+        for (const [tableName, tableStats] of Object.entries(statsData)) {
+          if (tableStats && typeof tableStats === 'object' && 'row_count' in tableStats) {
+            dataStatsInfo += `**${tableName}** (${tableStats.row_count} rows):\n`;
+            
+            if (tableStats.distinct_values) {
+              for (const [key, values] of Object.entries(tableStats.distinct_values)) {
+                if (Array.isArray(values) && values.length > 0) {
+                  dataStatsInfo += `  - ${key}: ${values.join(', ')}\n`;
+                }
+              }
+            }
+            
+            if (tableStats.price_range) {
+              dataStatsInfo += `  - Price range: $${tableStats.price_range.min_price} - $${tableStats.price_range.max_price} (avg: $${Math.round(tableStats.price_range.avg_price)})\n`;
+            }
+            if (tableStats.salary_range) {
+              dataStatsInfo += `  - Salary range: $${tableStats.salary_range.min_salary} - $${tableStats.salary_range.max_salary} (avg: $${Math.round(tableStats.salary_range.avg_salary)})\n`;
+            }
+            if (tableStats.amount_range) {
+              dataStatsInfo += `  - Amount range: $${tableStats.amount_range.min_amount} - $${tableStats.amount_range.max_amount} (avg: $${Math.round(tableStats.amount_range.avg_amount)})\n`;
+            }
+            if (tableStats.date_range) {
+              dataStatsInfo += `  - Date range: ${tableStats.date_range.min_date} to ${tableStats.date_range.max_date}\n`;
+            }
+            
+            dataStatsInfo += "\n";
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching data stats:", error);
+      // Continue without stats if there's an error
+    }
+
     const prompt = `Generate a realistic SQL practice problem for a learning game. The database has these tables:
 
 **customers**: customer_id, first_name, last_name, email, phone, city, state, country, registration_date, is_active
@@ -60,13 +112,21 @@ Deno.serve(async (req: Request) => {
 **order_items**: order_item_id, order_id, product_id, quantity, unit_price, discount
 **employees**: employee_id, first_name, last_name, email, department, position, salary, hire_date, manager_id
 **sales**: sale_id, employee_id, sale_date, amount, region
+${dataStatsInfo}
 
 Create a problem at the ${difficulty} level: ${difficultyDesc}
 ${topic ? `Focus on this topic: ${topic}` : ""}
 
+**CRITICAL**: Only use values that actually exist in the database as shown above. For example:
+- If countries only include "USA" or "United States", do NOT ask for "Canada" or other countries that don't exist
+- If categories only include specific values, use only those categories
+- If states only include certain US states, use only those states
+- Use date ranges that exist in the data
+- Use price/amount ranges that exist in the data
+
 Return a JSON object with:
 - "title": Short problem title
-- "description": Clear problem statement describing what to find
+- "description": Clear problem statement describing what to find (using only values that exist in the database)
 - "difficulty": The difficulty level
 - "topic": Main SQL concept being tested
 - "hints": Array of 3 progressive hints (from gentle to more specific)

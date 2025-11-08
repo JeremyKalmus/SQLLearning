@@ -66,17 +66,32 @@ Deno.serve(async (req: Request) => {
     }
 
     // Handle case where data might be a JSON string or already parsed
-    let rows = data;
+    let result = data;
     if (typeof data === 'string') {
       try {
-        rows = JSON.parse(data);
+        result = JSON.parse(data);
       } catch (e) {
-        rows = data;
+        result = data;
       }
     }
 
+    // Handle new format with column_order, or legacy format (array of rows)
+    let rows, columnOrder;
+    if (result && typeof result === 'object' && 'rows' in result) {
+      rows = result.rows || [];
+      columnOrder = result.column_order || null;
+    } else {
+      // Legacy format - just an array
+      rows = Array.isArray(result) ? result : [];
+      columnOrder = null;
+    }
+
     return new Response(
-      JSON.stringify({ rows: rows || [], rowCount: Array.isArray(rows) ? rows.length : 0 }),
+      JSON.stringify({ 
+        rows: rows || [], 
+        rowCount: Array.isArray(rows) ? rows.length : 0,
+        column_order: columnOrder
+      }),
       {
         headers: {
           ...corsHeaders,

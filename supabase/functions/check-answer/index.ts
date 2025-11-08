@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { query, problem_description } = await req.json();
+    const { query, problem_description, difficulty, student_level, problems_solved } = await req.json();
 
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .from("user_api_keys")
@@ -58,9 +58,14 @@ Deno.serve(async (req: Request) => {
       schemaInfo = `\n\n**Database Schema**:\n${JSON.stringify(schemaData, null, 2)}`;
     }
 
+    const difficultyInfo = difficulty ? `\n**Problem Difficulty**: ${difficulty}` : '';
+    const studentInfo = student_level || problems_solved 
+      ? `\n**Student Information**:\n- Level: ${student_level || 'Unknown'}\n- Problems Solved: ${problems_solved || 0}` 
+      : '';
+
     const prompt = `You are a SQL tutor checking a student's answer.
 
-**Problem**: ${problem_description}
+**Problem**: ${problem_description}${difficultyInfo}${studentInfo}
 
 **Database Schema**:${schemaInfo}
 
@@ -75,6 +80,7 @@ Analyze the student's query and provide feedback. Consider:
 3. Are there any errors or improvements needed?
 4. Does the query reference correct table and column names from the schema?
 5. Are the data types used correctly (e.g., using text columns for string comparisons, numeric columns for calculations)?
+6. Adjust your feedback based on the student's level and experience - provide more detailed explanations for beginners, and focus on advanced techniques for experienced students.
 
 Return a JSON object with:
 - "correct": boolean (true if query is correct and efficient)

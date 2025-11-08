@@ -1553,7 +1553,15 @@ header h1,
 }
 
 .feedback-summary {
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+.btn-view-feedback {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 200px;
 }
 
 .feedback-details {

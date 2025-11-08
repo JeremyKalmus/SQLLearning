@@ -270,13 +270,25 @@ export default function Problems() {
     setExecuting(true);
 
     try {
+      // Get user statistics before checking answer
+      const { data: statsData } = await supabase
+        .from('user_statistics')
+        .select('total_problems_solved, total_xp')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const userLevel = statsData?.total_xp ? Math.floor(statsData.total_xp / 100) + 1 : 1;
+      const problemsSolved = statsData?.total_problems_solved || 0;
+
       const { data, error } = await supabase.functions.invoke('check-answer', {
         body: {
           query,
           problem_description: problem.description,
           user_id: user.id,
           difficulty: problem.difficulty,
-          topic: problem.topic
+          topic: problem.topic,
+          student_level: userLevel,
+          problems_solved: problemsSolved
         }
       });
 
@@ -544,7 +556,10 @@ export default function Problems() {
                     <table className="result-table">
                       <thead>
                         <tr>
-                          {Object.keys(result.rows[0]).map((key) => (
+                          {(result.column_order && Array.isArray(result.column_order) 
+                            ? result.column_order 
+                            : Object.keys(result.rows[0])
+                          ).map((key) => (
                             <th key={key}>{key}</th>
                           ))}
                         </tr>
@@ -552,7 +567,10 @@ export default function Problems() {
                       <tbody>
                         {result.rows.map((row, i) => (
                           <tr key={i}>
-                            {Object.keys(result.rows[0]).map((key) => (
+                            {(result.column_order && Array.isArray(result.column_order)
+                              ? result.column_order
+                              : Object.keys(result.rows[0])
+                            ).map((key) => (
                               <td key={key}>{String(row[key] ?? 'NULL')}</td>
                             ))}
                           </tr>
@@ -576,10 +594,10 @@ export default function Problems() {
                   {!showFeedbackDetails && (
                     <div className="feedback-summary">
                       <button
-                        className="btn btn-link"
+                        className="btn btn-secondary btn-view-feedback"
                         onClick={() => setShowFeedbackDetails(true)}
                       >
-                        Click to view detailed feedback
+                        View Detailed Feedback
                       </button>
                     </div>
                   )}
