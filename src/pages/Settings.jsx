@@ -105,18 +105,28 @@ export default function Settings() {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function invoke error:', error);
+        setTestResult({ 
+          type: 'error', 
+          message: error.message || `Failed to test API key: ${JSON.stringify(error)}` 
+        });
+        return;
+      }
 
       if (data?.success) {
         setTestResult({ type: 'success', message: data.message || 'API key is working!' });
         // Reload API key status to get updated validation info
         loadApiKeyStatus();
       } else {
-        setTestResult({ type: 'error', message: data?.error || 'Test failed' });
+        setTestResult({ type: 'error', message: data?.error || 'Test failed - API key may be invalid' });
       }
     } catch (error) {
       console.error('Error testing API key:', error);
-      setTestResult({ type: 'error', message: error.message || 'Failed to test API key' });
+      setTestResult({ 
+        type: 'error', 
+        message: error?.message || `Failed to test API key: ${String(error)}` 
+      });
     } finally {
       setTesting(false);
     }

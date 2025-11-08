@@ -61,12 +61,18 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!anthropicResponse.ok) {
-      const errorData = await anthropicResponse.json();
-      throw new Error(`Anthropic API error: ${errorData.error?.message || 'Unknown error'}`);
+      let errorMessage = 'Unknown error';
+      try {
+        const errorData = await anthropicResponse.json();
+        errorMessage = errorData.error?.message || errorData.message || `HTTP ${anthropicResponse.status}`;
+      } catch (e) {
+        errorMessage = `HTTP ${anthropicResponse.status}: ${anthropicResponse.statusText}`;
+      }
+      throw new Error(`Anthropic API error: ${errorMessage}`);
     }
 
     const anthropicData = await anthropicResponse.json();
-    const responseText = anthropicData.content[0].text.trim();
+    const responseText = anthropicData.content[0]?.text?.trim() || "OK";
 
     // Update the API key validation status
     await supabase
@@ -91,6 +97,8 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
+    console.error("Test API key error:", error);
+    
     // Update validation status on error
     try {
       const supabase = createClient(
@@ -116,13 +124,14 @@ Deno.serve(async (req: Request) => {
       // Ignore update errors
     }
 
+    // Return 200 with error details so frontend can handle it properly
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error.message || String(error),
       }),
       {
-        status: 400,
+        status: 200,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
