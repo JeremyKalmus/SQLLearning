@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
-import { Book } from 'lucide-react';
+import { Book, FileText } from 'lucide-react';
+import PropTypes from 'prop-types';
 
-export default function Header() {
+export default function Header({ onToggleCheatSheet }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -27,6 +28,14 @@ export default function Header() {
           <Link to="/">Dashboard</Link>
           <Link to="/flashcards">Flashcards</Link>
           <Link to="/problems">Problems</Link>
+          <button
+            className="cheatsheet-btn"
+            onClick={onToggleCheatSheet}
+            title="View SQL Cheat Sheet"
+          >
+            <FileText size={18} />
+            <span>Cheat Sheet</span>
+          </button>
         </nav>
 
         <div className="user-menu">
@@ -52,3 +61,7 @@ export default function Header() {
     </header>
   );
 }
+
+Header.propTypes = {
+  onToggleCheatSheet: PropTypes.func.isRequired,
+};
