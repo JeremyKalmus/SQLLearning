@@ -213,6 +213,22 @@
     border-color: var(--primary-color);
 }
 
+/* CodeMirror Editor Container */
+#sql-editor-container {
+    width: 100%;
+    min-height: 300px;
+    flex: 1;
+    overflow: hidden;
+}
+
+#sql-editor-container .cm-editor {
+    height: 100%;
+}
+
+#sql-editor-container .cm-scroller {
+    overflow: auto;
+}
+
 .editor-actions {
     display: flex;
     justify-content: space-between;
