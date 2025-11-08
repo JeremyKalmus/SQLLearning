@@ -12,6 +12,8 @@ export default function Flashcards() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [options, setOptions] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [cardProgress, setCardProgress] = useState(null);
+  const [sessionStats, setSessionStats] = useState({ reviewed: 0, correct: 0 });
 
   const cards = flashcardsData[selectedLevel] || [];
   const currentCard = cards[currentIndex];
@@ -113,18 +115,42 @@ export default function Flashcards() {
     }
   }, [currentCard, selectedLevel]);
 
+  const loadCardProgress = useCallback(async () => {
+    if (!currentCard || !user) return;
+    
+    const { data, error } = await supabase
+      .from('flashcard_progress')
+      .select('times_seen, times_correct')
+      .eq('user_id', user.id)
+      .eq('card_id', currentCard.id)
+      .maybeSingle();
+    
+    if (!error && data) {
+      setCardProgress(data);
+    } else if (!error && !data) {
+      // Card hasn't been reviewed yet
+      setCardProgress(null);
+    }
+  }, [currentCard, user]);
+
   useEffect(() => {
     setIsFlipped(false);
     setShowOptions(false);
     setSelectedOption(null);
     setOptions([]);
     setLoadingOptions(false);
+    setCardProgress(null);
+    
+    // Load progress for current card
+    if (currentCard && user) {
+      loadCardProgress();
+    }
     
     // Automatically load options for the current card
     if (currentCard) {
       loadOptionsForCard();
     }
-  }, [currentIndex, currentCard, loadOptionsForCard]);
+  }, [currentIndex, currentCard, loadOptionsForCard, loadCardProgress, user]);
 
   const handleLevelChange = (level) => {
     setSelectedLevel(level);
@@ -148,21 +174,66 @@ export default function Flashcards() {
 
 
   const handleOptionSelect = async (option, index) => {
-    setSelectedOption(index);
+    // Allow changing selection if wrong answer was selected
+    if (selectedOption !== null && options[selectedOption]?.correct === false) {
+      setSelectedOption(index);
+      // Only update progress if selecting correct answer after wrong one
+      if (option.correct) {
+        await updateProgress(true);
+      }
+      return;
+    }
+    
+    // Don't allow changing if correct answer was already selected
+    if (selectedOption !== null && options[selectedOption]?.correct === true) {
+      return;
+    }
 
+    setSelectedOption(index);
+    await updateProgress(option.correct);
+  };
+
+  const updateProgress = async (isCorrect) => {
+    if (!user || !currentCard) return;
+
+    // Get current progress
+    const { data: existingProgress } = await supabase
+      .from('flashcard_progress')
+      .select('times_seen, times_correct')
+      .eq('user_id', user.id)
+      .eq('card_id', currentCard.id)
+      .maybeSingle();
+
+    const currentTimesSeen = existingProgress?.times_seen || 0;
+    const currentTimesCorrect = existingProgress?.times_correct || 0;
+    
+    const newTimesSeen = currentTimesSeen + 1;
+    const newTimesCorrect = isCorrect ? currentTimesCorrect + 1 : currentTimesCorrect;
+
+    // Update flashcard progress
     await supabase.from('flashcard_progress').upsert({
       user_id: user.id,
       card_id: currentCard.id,
-      times_seen: 1,
-      times_correct: option.correct ? 1 : 0,
+      times_seen: newTimesSeen,
+      times_correct: newTimesCorrect,
       last_seen: new Date().toISOString(),
       topic: currentCard.topic,
-      level: currentCard.level
+      level: currentCard.level || selectedLevel
     }, {
       onConflict: 'user_id,card_id',
       ignoreDuplicates: false
     });
 
+    // Update card progress state
+    setCardProgress({ times_seen: newTimesSeen, times_correct: newTimesCorrect });
+
+    // Update session stats
+    setSessionStats(prev => ({
+      reviewed: prev.reviewed + 1,
+      correct: prev.correct + (isCorrect ? 1 : 0)
+    }));
+
+    // Update user statistics
     await supabase.rpc('increment', {
       table_name: 'user_statistics',
       column_name: 'total_flashcards_reviewed',
@@ -170,7 +241,7 @@ export default function Flashcards() {
     }).catch(() => {
       supabase.from('user_statistics').update({
         total_flashcards_reviewed: supabase.raw('total_flashcards_reviewed + 1'),
-        total_xp: supabase.raw(`total_xp + ${option.correct ? 5 : 2}`),
+        total_xp: supabase.raw(`total_xp + ${isCorrect ? 5 : 2}`),
         updated_at: new Date().toISOString()
       }).eq('user_id', user.id);
     });
@@ -244,7 +315,28 @@ export default function Flashcards() {
 
         <div className="card-counter">
           Card {currentIndex + 1} of {cards.length}
+          {cardProgress && (
+            <span className="card-progress-info">
+              {' • '}
+              Reviewed {cardProgress.times_seen} time{cardProgress.times_seen !== 1 ? 's' : ''}
+              {cardProgress.times_seen > 0 && (
+                <span className="accuracy-info">
+                  {' • '}
+                  {Math.round((cardProgress.times_correct / cardProgress.times_seen) * 100)}% correct
+                </span>
+              )}
+            </span>
+          )}
         </div>
+
+        {sessionStats.reviewed > 0 && (
+          <div className="session-stats">
+            <span>Session: {sessionStats.reviewed} reviewed</span>
+            <span className="session-accuracy">
+              {Math.round((sessionStats.correct / sessionStats.reviewed) * 100)}% correct
+            </span>
+          </div>
+        )}
 
         <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={handleFlip}>
           <div className="flashcard-inner">
@@ -260,36 +352,60 @@ export default function Flashcards() {
                 ) : (
                   <>
                     <div className="options-list">
-                      {options.map((option, index) => (
-                        <button
-                          key={index}
-                          className={`option-btn ${
-                            selectedOption === index
-                              ? option.correct
-                                ? 'correct'
-                                : 'incorrect'
-                              : ''
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOptionSelect(option, index);
-                          }}
-                          disabled={selectedOption !== null}
-                        >
-                          {option.text}
-                        </button>
-                      ))}
+                      {options.map((option, index) => {
+                        const isSelected = selectedOption === index;
+                        const isCorrect = option.correct;
+                        const wasWrongSelected = selectedOption !== null && options[selectedOption]?.correct === false;
+                        const canSelect = selectedOption === null || (wasWrongSelected && !isSelected);
+                        
+                        return (
+                          <button
+                            key={index}
+                            className={`option-btn ${
+                              isSelected
+                                ? isCorrect
+                                  ? 'correct'
+                                  : 'incorrect'
+                                : ''
+                            } ${!canSelect && !isSelected ? 'disabled' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (canSelect) {
+                                handleOptionSelect(option, index);
+                              }
+                            }}
+                            disabled={!canSelect}
+                          >
+                            {option.text}
+                            {isSelected && isCorrect && <span className="checkmark">✓</span>}
+                            {isSelected && !isCorrect && <span className="crossmark">✗</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                     {selectedOption !== null && (
-                      <button 
-                        className="btn btn-primary options-next-btn" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNext();
-                        }}
-                      >
-                        Next Card
-                      </button>
+                      <div className="options-actions">
+                        {options[selectedOption]?.correct === false && (
+                          <button 
+                            className="btn btn-secondary options-try-again-btn" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOption(null);
+                            }}
+                          >
+                            Try Again
+                          </button>
+                        )}
+                        <button 
+                          className="btn btn-primary options-next-btn" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNext();
+                          }}
+                        >
+                          Next Card
+                        </button>
+                      </div>
                     )}
                   </>
                 )}

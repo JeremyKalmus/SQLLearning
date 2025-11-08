@@ -503,15 +503,19 @@ header h1,
     padding: var(--spacing-2xl);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
-    min-height: 300px;
+    min-height: 400px;
+    max-height: 90vh;
     margin-bottom: var(--spacing-lg);
     perspective: 1000px;
     cursor: pointer;
+    overflow: hidden;
+    position: relative;
 }
 
 .flashcard-inner {
     position: relative;
     width: 100%;
+    height: 100%;
     min-height: 400px;
     transition: transform 0.6s;
     transform-style: preserve-3d;
@@ -525,15 +529,20 @@ header h1,
 .flashcard-back {
     position: absolute;
     width: 100%;
+    height: 100%;
     min-height: 400px;
+    max-height: 100%;
     backface-visibility: hidden;
     background: var(--card-bg);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
-    padding: 3rem;
+    padding: var(--spacing-2xl);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .flashcard-back {
@@ -1063,6 +1072,38 @@ header h1,
     margin-bottom: var(--spacing-lg);
     font-size: 14px;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.card-progress-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.accuracy-info {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.session-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.session-accuracy {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .navigation-buttons {
@@ -1203,6 +1244,10 @@ header h1,
 .flashcard-options {
     margin-top: var(--spacing-xl);
     width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .options-list {
@@ -1210,11 +1255,37 @@ header h1,
     flex-direction: column;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .options-list .option-btn {
     margin-bottom: 0;
     width: 100%;
+    position: relative;
+    padding-right: var(--spacing-2xl);
+}
+
+.option-btn .checkmark,
+.option-btn .crossmark {
+    position: absolute;
+    right: var(--spacing-md);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.option-btn .checkmark {
+    color: var(--secondary-color);
+}
+
+.option-btn .crossmark {
+    color: var(--danger-color);
+}
+
+.option-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .options-loading,
@@ -1229,9 +1300,16 @@ header h1,
     color: var(--danger-color);
 }
 
-.options-next-btn {
-    width: 100%;
+.options-actions {
+    display: flex;
+    gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+.options-try-again-btn,
+.options-next-btn {
+    flex: 1;
 }
 
 /* Problems Page Styles */
@@ -2402,10 +2480,24 @@ header h1,
         gap: var(--spacing-md);
     }
 
+    .flashcard {
+        min-height: 350px;
+        max-height: 80vh;
+    }
+
     .flashcard-front,
     .flashcard-back {
-        padding: 2rem;
+        padding: var(--spacing-xl);
         min-height: 350px;
+    }
+
+    .options-actions {
+        flex-direction: column;
+    }
+
+    .options-try-again-btn,
+    .options-next-btn {
+        width: 100%;
     }
 
     .card-question,
