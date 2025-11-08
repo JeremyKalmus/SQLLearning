@@ -5,7 +5,7 @@ import { Play, CheckCircle, X, Lightbulb, ArrowLeft, Trash2, Target } from 'luci
 import SchemaViewer from '../components/SchemaViewer';
 import TablePreviewModal from '../components/TablePreviewModal';
 import CodeMirror from '@uiw/react-codemirror';
-import { sql } from '@codemirror/lang-sql';
+import { sql, SQLDialect } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 
 export default function Problems() {
@@ -27,6 +27,9 @@ export default function Problems() {
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
   const [showProgress, setShowProgress] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hints, setHints] = useState([]);
+  const [loadingHint, setLoadingHint] = useState(false);
 
   useEffect(() => {
     checkApiKey();
@@ -163,6 +166,8 @@ export default function Problems() {
       setQuery('');
       setResult(null);
       setFeedback(null);
+      setHintsUsed(0);
+      setHints([]);
       setView('workspace');
     } catch (error) {
       console.error('Error loading saved problem:', error);
@@ -245,6 +250,8 @@ export default function Problems() {
 
       completeProgress();
       setProblem(data);
+      setHintsUsed(0);
+      setHints([]);
       setView('workspace');
       loadSavedProblems(); // Reload saved problems list
     } catch (error) {
@@ -398,6 +405,53 @@ export default function Problems() {
     setQuery('');
     setResult(null);
     setFeedback(null);
+  };
+
+  const getHint = async () => {
+    if (!problem) {
+      alert('Please generate a problem first');
+      return;
+    }
+
+    if (hintsUsed >= 3) {
+      alert('You have used all available hints!');
+      return;
+    }
+
+    if (!hasApiKey) {
+      alert('Please configure your API key in Settings first');
+      return;
+    }
+
+    setLoadingHint(true);
+    const nextHintLevel = hintsUsed + 1;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-hint', {
+        body: {
+          problem_description: problem.description,
+          query: query,
+          hint_level: nextHintLevel,
+          difficulty: problem.difficulty,
+          topic: problem.topic
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const newHint = data.hint;
+      setHints(prev => [...prev, { level: nextHintLevel, text: newHint }]);
+      setHintsUsed(nextHintLevel);
+    } catch (error) {
+      console.error('Error getting hint:', error);
+      alert('Failed to get hint. Please try again.');
+    } finally {
+      setLoadingHint(false);
+    }
   };
 
   if (loading) {
@@ -562,7 +616,10 @@ export default function Problems() {
                 <CodeMirror
                   value={query}
                   height="300px"
-                  extensions={[sql()]}
+                  extensions={[sql({
+                    dialect: SQLDialect.StandardSQL,
+                    upperCaseKeywords: true
+                  })]}
                   theme={oneDark}
                   onChange={(value) => setQuery(value)}
                   placeholder="-- Write your SQL query here...\nSELECT * FROM customers;"
@@ -604,6 +661,15 @@ export default function Problems() {
                       <X size={16} />
                       Clear
                     </button>
+                    <button
+                      className="btn btn-hint"
+                      onClick={getHint}
+                      disabled={executing || loadingHint || hintsUsed >= 3 || !problem}
+                      title={hintsUsed >= 3 ? 'All hints used' : `Get hint ${hintsUsed + 1}/3`}
+                    >
+                      <Lightbulb size={16} />
+                      {loadingHint ? 'Loading...' : `Hint (${hintsUsed}/3)`}
+                    </button>
                   </div>
                   <button
                     className="btn btn-success"
@@ -616,6 +682,21 @@ export default function Problems() {
                 </div>
               </div>
             </div>
+
+            {hints.length > 0 && (
+              <div className="hint-display">
+                <h4>
+                  <Lightbulb size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                  Hints ({hintsUsed}/3)
+                </h4>
+                {hints.map((hint, index) => (
+                  <div key={index} className="hint-item">
+                    <div className="hint-level">Hint {hint.level}:</div>
+                    <p>{hint.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {result && (
               <div className="query-results" id="results-panel">
