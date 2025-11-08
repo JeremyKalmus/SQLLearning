@@ -1,486 +1,148 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { Play, CheckCircle, X, Lightbulb, ArrowLeft, Trash2, Target } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import SchemaViewer from '../components/SchemaViewer';
 import TablePreviewModal from '../components/TablePreviewModal';
-import CodeMirror from '@uiw/react-codemirror';
-import { sql, SQLDialect } from '@codemirror/lang-sql';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { useProgress } from '../hooks/useProgress';
+import { useProblemGeneration } from '../hooks/useProblemGeneration';
+import { useQueryExecution } from '../hooks/useQueryExecution';
+import { useAnswerChecking } from '../hooks/useAnswerChecking';
+import { useHints } from '../hooks/useHints';
+import { useSavedProblems } from '../hooks/useSavedProblems';
+import ProblemDescription from './Problems/components/ProblemDescription';
+import QueryEditor from './Problems/components/QueryEditor';
+import QueryResults from './Problems/components/QueryResults';
+import FeedbackPanel from './Problems/components/FeedbackPanel';
+import HintsDisplay from './Problems/components/HintsDisplay';
+import SavedProblemsList from './Problems/components/SavedProblemsList';
+import ProgressOverlay from './Problems/components/ProgressOverlay';
 
 export default function Problems() {
-  const { user } = useAuth();
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState('setup'); // 'setup' or 'workspace'
-  const [difficulty, setDifficulty] = useState('intermediate');
-  const [problem, setProblem] = useState(null);
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState(null);
-  const [feedback, setFeedback] = useState(null);
-  const [executing, setExecuting] = useState(false);
-  const [savedProblems, setSavedProblems] = useState([]);
-  const [loadingSavedProblems, setLoadingSavedProblems] = useState(false);
   const [previewTable, setPreviewTable] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [showFeedbackDetails, setShowFeedbackDetails] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
-  const [showProgress, setShowProgress] = useState(false);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [hints, setHints] = useState([]);
-  const [loadingHint, setLoadingHint] = useState(false);
 
-  // Helper function to parse praise text into array of items
-  const parsePraise = (text) => {
-    if (Array.isArray(text)) return text;
-    if (!text) return [];
-    
-    // Split by numbered patterns (1. 2. 3. etc.) or bullet points (-)
-    const numberedMatch = text.match(/\d+\.\s+[^\d]+/g);
-    if (numberedMatch) {
-      return numberedMatch.map(item => item.replace(/^\d+\.\s+/, '').trim());
-    }
-    
-    // Split by bullet points
-    const bulletMatch = text.match(/[-•]\s+[^-•]+/g);
-    if (bulletMatch) {
-      return bulletMatch.map(item => item.replace(/^[-•]\s+/, '').trim());
-    }
-    
-    // Split by newlines if present
-    if (text.includes('\n')) {
-      return text.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(line => line.replace(/^\d+\.\s+/, '').replace(/^[-•]\s+/, '').trim());
-    }
-    
-    // If no clear structure, return as single item
-    return [text];
+  // Progress management
+  const {
+    progress,
+    progressMessage,
+    showProgress,
+    startProgress,
+    completeProgress,
+    setShowProgress
+  } = useProgress();
+
+  // Saved problems management
+  const {
+    savedProblems,
+    loadingSavedProblems,
+    loadSavedProblems,
+    loadSavedProblem: loadSavedProblemFromHook,
+    deleteSavedProblem
+  } = useSavedProblems(view);
+
+  // Problem generation
+  const handleProblemGenerated = (newProblem) => {
+    setView('workspace');
   };
 
-  useEffect(() => {
-    checkApiKey();
-  }, []);
+  const {
+    hasApiKey,
+    loading,
+    difficulty,
+    setDifficulty,
+    problem,
+    setProblem,
+    executing: generatingProblem,
+    generateProblem: generateProblemFromHook,
+    checkApiKey
+  } = useProblemGeneration(handleProblemGenerated, loadSavedProblems);
 
-  useEffect(() => {
-    if (view === 'setup' && user) {
-      loadSavedProblems();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, user]);
+  // Query execution
+  const {
+    query,
+    setQuery,
+    result,
+    setResult,
+    executing: executingQuery,
+    executeQuery,
+    clearQuery
+  } = useQueryExecution();
 
-  // Progress animation effect
-  useEffect(() => {
-    let interval;
-    if (showProgress && progress < 90) {
-      interval = setInterval(() => {
-        setProgress(prev => {
-          const increment = Math.max(1, (90 - prev) / 10);
-          return Math.min(90, prev + increment);
-        });
-      }, 200);
-    }
-    return () => clearInterval(interval);
-  }, [showProgress, progress]);
+  // Answer checking
+  const {
+    feedback,
+    setFeedback,
+    executing: checkingAnswer,
+    showFeedbackDetails,
+    setShowFeedbackDetails,
+    checkAnswer: checkAnswerFromHook,
+    resetFeedback
+  } = useAnswerChecking();
 
-  const startProgress = (message) => {
-    setProgressMessage(message);
-    setProgress(0);
-    setShowProgress(true);
-  };
+  // Hints management
+  const { hintsUsed, hints, loadingHint, getHint, resetHints } = useHints(hasApiKey);
 
-  const completeProgress = () => {
-    setProgress(100);
-    setTimeout(() => {
-      setShowProgress(false);
-      setProgress(0);
-    }, 500);
-  };
+  // Combined executing state
+  const executing = generatingProblem || executingQuery || checkingAnswer;
 
-  const checkApiKey = async () => {
-    const { data } = await supabase
-      .from('user_api_keys')
-      .select('encrypted_api_key')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    setHasApiKey(!!data?.encrypted_api_key);
-    setLoading(false);
-  };
-
-  const loadSavedProblems = async () => {
-    try {
-      setLoadingSavedProblems(true);
-      
-      // Fetch saved problems
-      const { data: savedData, error: savedError } = await supabase
-        .from('saved_problems')
-        .select('id, problem_data, created_at, last_accessed')
-        .eq('user_id', user.id)
-        .order('last_accessed', { ascending: false })
-        .limit(50);
-
-      if (savedError) throw savedError;
-
-      // For each saved problem, get best score and attempts from problem_history
-      const problemsWithStats = await Promise.all(
-        (savedData || []).map(async (sp) => {
-          const problemData = sp.problem_data;
-          const problemTitle = problemData?.title || '';
-
-          // Get history for this problem
-          const { data: historyData, error: historyError } = await supabase
-            .from('problem_history')
-            .select('score, correct')
-            .eq('user_id', user.id)
-            .eq('problem_title', problemTitle)
-            .order('score', { ascending: false });
-
-          if (historyError) {
-            console.error('Error fetching history:', historyError);
-            return {
-              ...sp,
-              problem: problemData,
-              best_score: null,
-              attempts: 0,
-              solved: false,
-            };
-          }
-
-          const attempts = historyData?.length || 0;
-          const bestScore = historyData && historyData.length > 0 ? historyData[0].score : null;
-          const solved = historyData?.some(h => h.correct) || false;
-
-          return {
-            ...sp,
-            problem: problemData,
-            best_score: bestScore,
-            attempts: attempts,
-            solved: solved,
-          };
-        })
-      );
-
-      setSavedProblems(problemsWithStats);
-    } catch (error) {
-      console.error('Error loading saved problems:', error);
-    } finally {
-      setLoadingSavedProblems(false);
-    }
-  };
-
+  // Load saved problem handler
   const loadSavedProblem = async (problemId) => {
     try {
-      setExecuting(true);
-      
-      const { data, error } = await supabase
-        .from('saved_problems')
-        .select('problem_data')
-        .eq('id', problemId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      // Update last_accessed
-      await supabase
-        .from('saved_problems')
-        .update({ last_accessed: new Date().toISOString() })
-        .eq('id', problemId)
-        .eq('user_id', user.id);
-
-      setProblem(data.problem_data);
+      const problemData = await loadSavedProblemFromHook(problemId);
+      setProblem(problemData);
       setQuery('');
       setResult(null);
       setFeedback(null);
-      setHintsUsed(0);
-      setHints([]);
+      resetHints();
       setView('workspace');
     } catch (error) {
-      console.error('Error loading saved problem:', error);
-      alert('Failed to load problem. Please try again.');
-    } finally {
-      setExecuting(false);
+      // Error already handled in hook
     }
   };
 
-  const deleteSavedProblem = async (problemId, e) => {
-    e.stopPropagation();
-    
-    if (!confirm('Are you sure you want to delete this saved problem?')) {
-      return;
-    }
-
+  // Generate problem handler
+  const handleGenerateProblem = async () => {
     try {
-      const { error } = await supabase
-        .from('saved_problems')
-        .delete()
-        .eq('id', problemId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      
-      loadSavedProblems();
+      await generateProblemFromHook(startProgress, completeProgress);
+      resetHints();
     } catch (error) {
-      console.error('Error deleting problem:', error);
-      alert('Failed to delete problem.');
-    }
-  };
-
-  const generateProblem = async () => {
-    if (!hasApiKey) {
-      alert('Please configure your API key in Settings first');
-      return;
-    }
-
-    setExecuting(true);
-    setProblem(null);
-    setQuery('');
-    setResult(null);
-    setFeedback(null);
-    startProgress('Generating your problem...');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-problem', {
-        body: { difficulty, user_id: user.id }
-      });
-
-      if (error) throw error;
-
-      // Check if a problem with the same title already exists for this user
-      const { data: existingProblems } = await supabase
-        .from('saved_problems')
-        .select('problem_data')
-        .eq('user_id', user.id);
-
-      // Only save if it's a new problem (different title)
-      let isDuplicate = false;
-      if (existingProblems && Array.isArray(existingProblems)) {
-        isDuplicate = existingProblems.some((sp) => {
-          return sp && sp.problem_data && sp.problem_data.title === data.title;
-        });
-      }
-
-      if (!isDuplicate) {
-        // Save the problem
-        const { error: saveError } = await supabase
-          .from('saved_problems')
-          .insert({
-            user_id: user.id,
-            problem_data: data,
-          });
-
-        if (saveError) {
-          console.error('Error saving problem:', saveError);
-        }
-      }
-
-      completeProgress();
-      setProblem(data);
-      setHintsUsed(0);
-      setHints([]);
-      setView('workspace');
-      loadSavedProblems(); // Reload saved problems list
-    } catch (error) {
-      console.error('Error generating problem:', error);
       setShowProgress(false);
-      alert('Failed to generate problem. Please check your API key and try again.');
-    } finally {
-      setExecuting(false);
     }
   };
 
-  const executeQuery = async () => {
-    if (!query.trim()) {
-      alert('Please enter a SQL query');
-      return;
-    }
-
-    setExecuting(true);
-    setResult(null);
-    setFeedback(null);
-
+  // Check answer handler
+  const handleCheckAnswer = async () => {
     try {
-      // Use fetch directly to get better error handling
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(`${supabaseUrl}/functions/v1/execute-query`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        // Handle HTTP errors
-        const errorMsg = result.error || `HTTP ${response.status}: ${response.statusText}`;
-        throw new Error(errorMsg);
-      }
-
-      // Check if the response contains an error
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      
-      setResult(result);
+      await checkAnswerFromHook(query, problem, startProgress, completeProgress, view, loadSavedProblems);
     } catch (error) {
-      console.error('Error executing query:', error);
-      let errorMessage = 'Failed to execute query. Please check your SQL syntax.';
-      
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.error) {
-        errorMessage = error.error;
-      } else {
-        errorMessage = String(error);
-      }
-      
-      setResult({ error: errorMessage });
-    } finally {
-      setExecuting(false);
-    }
-  };
-
-  const checkAnswer = async () => {
-    if (!query.trim() || !problem) {
-      alert('Please enter a query and generate a problem first');
-      return;
-    }
-
-    setExecuting(true);
-    startProgress('Reviewing your query...');
-
-    try {
-      // Get user statistics before checking answer
-      const { data: statsData } = await supabase
-        .from('user_statistics')
-        .select('total_problems_attempted, total_problems_solved, total_xp')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const userLevel = statsData?.total_xp ? Math.floor(statsData.total_xp / 100) + 1 : 1;
-      const problemsSolved = statsData?.total_problems_solved || 0;
-
-      const { data, error } = await supabase.functions.invoke('check-answer', {
-        body: {
-          query,
-          problem_description: problem.description,
-          user_id: user.id,
-          difficulty: problem.difficulty,
-          topic: problem.topic,
-          student_level: userLevel,
-          problems_solved: problemsSolved
-        }
-      });
-
-      if (error) throw error;
-
-      completeProgress();
-      setFeedback(data);
-      setShowFeedbackDetails(false); // Reset to collapsed state
-
-      await supabase.from('problem_history').insert({
-        user_id: user.id,
-        problem_title: problem.title,
-        difficulty: problem.difficulty,
-        topic: problem.topic,
-        query,
-        score: data.score || 0,
-        correct: data.correct || false
-      });
-
-      // Update statistics using the statsData we already fetched
-
-      if (statsData) {
-        await supabase
-          .from('user_statistics')
-          .update({
-            total_problems_attempted: (statsData.total_problems_attempted || 0) + 1,
-            total_problems_solved: (statsData.total_problems_solved || 0) + (data.correct ? 1 : 0),
-            total_xp: (statsData.total_xp || 0) + Math.floor((data.score || 0) / 5),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-      }
-
-      // Reload saved problems to update scores
-      if (view === 'setup') {
-        loadSavedProblems();
-      }
-    } catch (error) {
-      console.error('Error checking answer:', error);
       setShowProgress(false);
-      alert('Failed to check answer. Please try again.');
-    } finally {
-      setExecuting(false);
     }
   };
 
+  // Clear query handler (also clears feedback)
+  const handleClearQuery = () => {
+    clearQuery();
+    setFeedback(null);
+  };
+
+  // Handle table preview
   const handleTablePreview = (tableName) => {
     setPreviewTable(tableName);
     setShowPreviewModal(true);
   };
 
-  const clearQuery = () => {
-    setQuery('');
+  // Handle next problem
+  const handleNextProblem = () => {
+    setView('setup');
     setResult(null);
     setFeedback(null);
+    setQuery('');
+    setShowFeedbackDetails(false);
   };
 
-  const getHint = async () => {
-    if (!problem) {
-      alert('Please generate a problem first');
-      return;
-    }
-
-    if (hintsUsed >= 3) {
-      alert('You have used all available hints!');
-      return;
-    }
-
-    if (!hasApiKey) {
-      alert('Please configure your API key in Settings first');
-      return;
-    }
-
-    setLoadingHint(true);
-    const nextHintLevel = hintsUsed + 1;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-hint', {
-        body: {
-          problem_description: problem.description,
-          query: query,
-          hint_level: nextHintLevel,
-          difficulty: problem.difficulty,
-          topic: problem.topic
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const newHint = data.hint;
-      setHints(prev => [...prev, { level: nextHintLevel, text: newHint }]);
-      setHintsUsed(nextHintLevel);
-    } catch (error) {
-      console.error('Error getting hint:', error);
-      alert('Failed to get hint. Please try again.');
-    } finally {
-      setLoadingHint(false);
-    }
+  // Handle toggle feedback details
+  const handleToggleFeedbackDetails = () => {
+    setShowFeedbackDetails(!showFeedbackDetails);
   };
 
   if (loading) {
@@ -523,7 +185,7 @@ export default function Problems() {
               </div>
               <button
                 className="btn btn-primary btn-large"
-                onClick={generateProblem}
+                onClick={handleGenerateProblem}
                 disabled={executing || !hasApiKey}
               >
                 {executing ? 'Generating...' : 'Generate New Problem'}
@@ -532,69 +194,20 @@ export default function Problems() {
 
             <div className="saved-problems-section">
               <h4>Saved Problems</h4>
-              {loadingSavedProblems ? (
-                <div className="loading-text">Loading saved problems...</div>
-              ) : savedProblems.length === 0 ? (
-                <div className="no-problems-text">No saved problems yet. Generate a problem to get started!</div>
-              ) : (
-                <div className="saved-problems-list">
-                  {savedProblems.map((sp) => {
-                    const p = sp.problem;
-                    const createdDate = new Date(sp.created_at).toLocaleDateString();
-                    const bestScore = sp.best_score !== null ? sp.best_score : null;
-                    const attempts = sp.attempts || 0;
-                    const solved = sp.solved || false;
-
-                    return (
-                      <div
-                        key={sp.id}
-                        className="saved-problem-card"
-                        onClick={() => loadSavedProblem(sp.id)}
-                      >
-                        <div className="saved-problem-header">
-                          <h5>{p?.title || 'Untitled Problem'}</h5>
-                          <button
-                            className="btn-icon-small"
-                            onClick={(e) => deleteSavedProblem(sp.id, e)}
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div className="saved-problem-meta">
-                          <div className="saved-problem-meta-left">
-                            <span className={`difficulty-badge difficulty-${p?.difficulty || 'basic'}`}>
-                              {p?.difficulty || 'basic'}
-                            </span>
-                            <span className="saved-problem-topic">{p?.topic || 'General SQL'}</span>
-                          </div>
-                          <div className="saved-problem-meta-right">
-                            {bestScore !== null && (
-                              <div className="saved-problem-score">
-                                <span className={`score-badge ${solved ? 'score-solved' : 'score-attempted'}`}>
-                                  {solved ? <CheckCircle size={12} /> : <Target size={12} />}
-                                  Best: {bestScore}/100
-                                </span>
-                                {attempts > 1 && (
-                                  <span className="attempts-badge">{attempts} attempts</span>
-                                )}
-                              </div>
-                            )}
-                            <span className="saved-problem-date">{createdDate}</span>
-                          </div>
-                        </div>
-                        <p className="saved-problem-description">
-                          {(p?.description || '').substring(0, 100)}
-                          {(p?.description || '').length > 100 ? '...' : ''}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <SavedProblemsList
+                savedProblems={savedProblems}
+                loadingSavedProblems={loadingSavedProblems}
+                onLoadProblem={loadSavedProblem}
+                onDeleteProblem={deleteSavedProblem}
+              />
             </div>
           </div>
         </div>
+        <ProgressOverlay
+          showProgress={showProgress}
+          progress={progress}
+          progressMessage={progressMessage}
+        />
       </div>
     );
   }
@@ -620,216 +233,37 @@ export default function Problems() {
 
         {problem && (
           <div className="problem-workspace">
-            <div className="problem-description">
-              <div className="problem-header">
-                <h3>{problem.title || 'Untitled Problem'}</h3>
-                <span className={`difficulty-badge difficulty-${problem.difficulty || 'basic'}`}>
-                  {problem.difficulty || 'basic'}
-                </span>
-              </div>
-              <p>{problem.description || 'No description available'}</p>
-              {problem.topic && (
-                <div className="problem-topic">
-                  <strong>Topic:</strong> <span>{problem.topic}</span>
-                </div>
-              )}
-            </div>
+            <ProblemDescription problem={problem} />
 
             <div className="workspace-main">
               <div className="database-schema">
                 <SchemaViewer onTablePreview={handleTablePreview} />
               </div>
 
-              <div className="query-editor">
-                <h4>Your SQL Query</h4>
-                <CodeMirror
-                  value={query}
-                  height="300px"
-                  extensions={[sql({
-                    dialect: SQLDialect.StandardSQL,
-                    upperCaseKeywords: true
-                  })]}
-                  theme={oneDark}
-                  onChange={(value) => setQuery(value)}
-                  placeholder="-- Write your SQL query here...\nSELECT * FROM customers;"
-                  editable={!executing}
-                  basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: true,
-                    highlightActiveLine: true,
-                    foldGutter: true,
-                    dropCursor: true,
-                    indentOnInput: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: true,
-                    highlightSelectionMatches: true,
-                  }}
-                  style={{
-                    fontSize: '14px',
-                    border: '2px solid var(--border-color)',
-                    borderRadius: 'var(--radius-lg)',
-                    overflow: 'hidden',
-                  }}
-                />
-                <div className="editor-actions">
-                  <div className="editor-actions-left">
-                    <button
-                      className="btn btn-primary"
-                      onClick={executeQuery}
-                      disabled={executing || !query.trim()}
-                    >
-                      <Play size={16} />
-                      Run Query
-                    </button>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={clearQuery}
-                      disabled={executing}
-                    >
-                      <X size={16} />
-                      Clear
-                    </button>
-                    <button
-                      className="btn btn-hint"
-                      onClick={getHint}
-                      disabled={executing || loadingHint || hintsUsed >= 3 || !problem}
-                      title={hintsUsed >= 3 ? 'All hints used' : `Get hint ${hintsUsed + 1}/3`}
-                    >
-                      <Lightbulb size={16} />
-                      {loadingHint ? 'Loading...' : `Hint (${hintsUsed}/3)`}
-                    </button>
-                  </div>
-                  <button
-                    className="btn btn-success"
-                    onClick={checkAnswer}
-                    disabled={executing || !query.trim() || !problem}
-                  >
-                    <CheckCircle size={16} />
-                    Submit for Review
-                  </button>
-                </div>
-              </div>
+              <QueryEditor
+                query={query}
+                setQuery={setQuery}
+                executing={executing}
+                loadingHint={loadingHint}
+                hintsUsed={hintsUsed}
+                problem={problem}
+                onExecuteQuery={executeQuery}
+                onClearQuery={handleClearQuery}
+                onGetHint={() => getHint(problem, query)}
+                onCheckAnswer={handleCheckAnswer}
+              />
             </div>
 
-            {hints.length > 0 && (
-              <div className="hint-display">
-                <h4>
-                  <Lightbulb size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                  Hints ({hintsUsed}/3)
-                </h4>
-                {hints.map((hint, index) => (
-                  <div key={index} className="hint-item">
-                    <div className="hint-level">Hint {hint.level}:</div>
-                    <p>{hint.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <HintsDisplay hints={hints} hintsUsed={hintsUsed} />
 
-            {result && (
-              <div className="query-results" id="results-panel">
-                <h4>Query Results:</h4>
-                {result.error ? (
-                  <div className="error-message">{result.error}</div>
-                ) : result.rows && result.rows.length > 0 ? (
-                  <div className="result-table-container">
-                    <table className="result-table">
-                      <thead>
-                        <tr>
-                          {(result.column_order && Array.isArray(result.column_order) 
-                            ? result.column_order 
-                            : Object.keys(result.rows[0])
-                          ).map((key) => (
-                            <th key={key}>{key}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {result.rows.map((row, i) => (
-                          <tr key={i}>
-                            {(result.column_order && Array.isArray(result.column_order)
-                              ? result.column_order
-                              : Object.keys(result.rows[0])
-                            ).map((key) => (
-                              <td key={key}>{String(row[key] ?? 'NULL')}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p>Query executed successfully but returned no results.</p>
-                )}
-              </div>
-            )}
+            <QueryResults result={result} />
 
-            {feedback && (
-              <div className={`feedback-panel ${feedback.correct ? 'success' : 'info'}`}>
-                <div className="feedback-content">
-                  <div className="feedback-header">
-                    <h4>Feedback</h4>
-                    <div className="feedback-score">Score: {feedback.score}/100</div>
-                  </div>
-                  {!showFeedbackDetails && (
-                    <div className="feedback-summary">
-                      <button
-                        className="btn btn-secondary btn-view-feedback"
-                        onClick={() => setShowFeedbackDetails(true)}
-                      >
-                        View Detailed Feedback
-                      </button>
-                    </div>
-                  )}
-                  {showFeedbackDetails && (
-                    <div className="feedback-details">
-                      <div className="feedback-message">{feedback.message}</div>
-                      {feedback.praise && (
-                        <div className="feedback-praise">
-                          <strong>What you did well:</strong>
-                          <ul>
-                            {parsePraise(feedback.praise).map((item, i) => (
-                              <li key={i}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {feedback.improvements && feedback.improvements.length > 0 && (
-                        <div className="feedback-improvements">
-                          <strong>Suggestions for improvement:</strong>
-                          <ul>
-                            {feedback.improvements.map((improvement, i) => (
-                              <li key={i}>{improvement}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      <button
-                        className="btn btn-link btn-small"
-                        onClick={() => setShowFeedbackDetails(false)}
-                      >
-                        Hide details
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="feedback-actions">
-                  <button
-                    className="btn btn-success"
-                    onClick={() => {
-                      setView('setup');
-                      setResult(null);
-                      setFeedback(null);
-                      setQuery('');
-                      setShowFeedbackDetails(false);
-                    }}
-                  >
-                    Next Problem
-                  </button>
-                </div>
-              </div>
-            )}
+            <FeedbackPanel
+              feedback={feedback}
+              showFeedbackDetails={showFeedbackDetails}
+              onToggleDetails={handleToggleFeedbackDetails}
+              onNextProblem={handleNextProblem}
+            />
           </div>
         )}
       </div>
@@ -843,20 +277,11 @@ export default function Problems() {
         }}
       />
 
-      {showProgress && (
-        <div className="progress-overlay">
-          <div className="progress-content">
-            <div className="loading-spinner"></div>
-            <p className="progress-message">{progressMessage}</p>
-            <div className="progress-bar-container">
-              <div className="progress-bar">
-                <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
-              </div>
-              <p className="progress-text">{Math.round(progress)}%</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProgressOverlay
+        showProgress={showProgress}
+        progress={progress}
+        progressMessage={progressMessage}
+      />
     </div>
   );
 }

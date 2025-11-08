@@ -169,6 +169,43 @@ Deno.serve(async (req: Request) => {
           if (amountRows.length > 0) {
             tableStats.amount_range = amountRows[0];
           }
+        } else if (table === "order_items") {
+          // Get sample order_ids and product_ids that exist
+          const { data: orderIdData } = await supabase.rpc("execute_readonly_query", {
+            sql_query: `SELECT DISTINCT order_id FROM ${table} ORDER BY order_id LIMIT 20`,
+          });
+          const { data: productIdData } = await supabase.rpc("execute_readonly_query", {
+            sql_query: `SELECT DISTINCT product_id FROM ${table} ORDER BY product_id LIMIT 20`,
+          });
+          const { data: quantityRange } = await supabase.rpc("execute_readonly_query", {
+            sql_query: `SELECT MIN(quantity) as min_quantity, MAX(quantity) as max_quantity, AVG(quantity) as avg_quantity FROM ${table}`,
+          });
+          const { data: priceRange } = await supabase.rpc("execute_readonly_query", {
+            sql_query: `SELECT MIN(unit_price) as min_price, MAX(unit_price) as max_price, AVG(unit_price) as avg_price FROM ${table}`,
+          });
+          const { data: discountRange } = await supabase.rpc("execute_readonly_query", {
+            sql_query: `SELECT MIN(discount) as min_discount, MAX(discount) as max_discount, AVG(discount) as avg_discount FROM ${table}`,
+          });
+
+          const orderIdRows = (orderIdData as any)?.rows || (Array.isArray(orderIdData) ? orderIdData : []);
+          const productIdRows = (productIdData as any)?.rows || (Array.isArray(productIdData) ? productIdData : []);
+          const quantityRows = (quantityRange as any)?.rows || (Array.isArray(quantityRange) ? quantityRange : []);
+          const priceRows = (priceRange as any)?.rows || (Array.isArray(priceRange) ? priceRange : []);
+          const discountRows = (discountRange as any)?.rows || (Array.isArray(discountRange) ? discountRange : []);
+          
+          tableStats.distinct_values = {
+            order_ids: orderIdRows.map((r: any) => r.order_id).filter((v: any) => v !== null && v !== undefined) || [],
+            product_ids: productIdRows.map((r: any) => r.product_id).filter((v: any) => v !== null && v !== undefined) || [],
+          };
+          if (quantityRows.length > 0) {
+            tableStats.quantity_range = quantityRows[0];
+          }
+          if (priceRows.length > 0) {
+            tableStats.price_range = priceRows[0];
+          }
+          if (discountRows.length > 0) {
+            tableStats.discount_range = discountRows[0];
+          }
         }
 
         stats[table] = tableStats;

@@ -7,6 +7,106 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Table schema definitions
+const TABLE_SCHEMAS: Record<string, string> = {
+  customers: "customer_id, first_name, last_name, email, phone, city, state, country, registration_date, is_active",
+  products: "product_id, product_name, category, price, cost, stock_quantity, supplier",
+  orders: "order_id, customer_id, order_date, ship_date, total_amount, status",
+  order_items: "order_item_id, order_id, product_id, quantity, unit_price, discount",
+  employees: "employee_id, first_name, last_name, email, department, position, salary, hire_date, manager_id",
+  sales: "sale_id, employee_id, sale_date, amount, region",
+};
+
+// Table relationships: which tables are directly connected
+const TABLE_RELATIONSHIPS: Record<string, string[]> = {
+  customers: ["orders"], // customers -> orders
+  products: ["order_items"], // products -> order_items
+  orders: ["customers", "order_items"], // orders -> customers, order_items
+  order_items: ["orders", "products"], // order_items -> orders, products
+  employees: ["sales", "employees"], // employees -> sales, employees (self-reference)
+  sales: ["employees"], // sales -> employees
+};
+
+// Predefined table combinations for rotation (ensures variety)
+const TABLE_COMBINATIONS: Record<string, string[][]> = {
+  basic: [
+    ["customers"],
+    ["products"],
+    ["customers", "products"],
+  ],
+  intermediate: [
+    ["customers", "orders"],
+    ["products", "order_items"],
+    ["customers", "orders", "order_items"],
+    ["products", "order_items", "orders"],
+    ["employees", "sales"],
+  ],
+  advanced: [
+    ["customers", "orders", "order_items", "products"],
+    ["employees", "sales", "orders"],
+    ["customers", "products", "orders", "order_items"],
+    ["employees", "employees"], // Self-join scenario
+  ],
+  expert: [
+    ["customers", "orders", "order_items", "products", "employees"],
+    ["customers", "orders", "order_items", "products", "employees", "sales"],
+    ["employees", "employees", "sales"], // Complex self-join
+  ],
+};
+
+/**
+ * Select tables based on difficulty and relationship constraints
+ * Rotates through combinations to ensure variety
+ */
+function selectTables(difficulty: string, userId: string): string[] {
+  const combinations = TABLE_COMBINATIONS[difficulty] || TABLE_COMBINATIONS.basic;
+  
+  // Combine user ID hash with current time (hour-based) for rotation
+  // This ensures variety across users AND over time for the same user
+  const userHash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const timeComponent = Math.floor(Date.now() / (1000 * 60 * 60)); // Changes every hour
+  const combinedHash = (userHash + timeComponent) % combinations.length;
+  
+  return combinations[combinedHash];
+}
+
+/**
+ * Validate table selection ensures all relationships are satisfied
+ * If a table is selected, its related tables should also be included if needed
+ */
+function validateTableSelection(selectedTables: string[], difficulty: string): string[] {
+  const validated = new Set(selectedTables);
+  
+  // For intermediate and above, ensure relationships are complete
+  if (difficulty === "intermediate" || difficulty === "advanced" || difficulty === "expert") {
+    selectedTables.forEach(table => {
+      const relationships = TABLE_RELATIONSHIPS[table] || [];
+      relationships.forEach(relatedTable => {
+        // If we're using a table that references another, include the referenced table
+        if (selectedTables.includes(table)) {
+          // For foreign key relationships, include the referenced table
+          if (table === "orders" && !validated.has("customers")) {
+            // orders.customer_id references customers, but we might not need it for all problems
+            // Only add if order_items is present (indicating we need the full chain)
+            if (selectedTables.includes("order_items")) {
+              validated.add("customers");
+            }
+          }
+          if (table === "order_items") {
+            if (!validated.has("orders")) validated.add("orders");
+            if (!validated.has("products")) validated.add("products");
+          }
+          if (table === "sales" && !validated.has("employees")) {
+            validated.add("employees");
+          }
+        }
+      });
+    });
+  }
+  
+  return Array.from(validated);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -52,7 +152,17 @@ Deno.serve(async (req: Request) => {
 
     const difficultyDesc = difficultyMap[difficulty] || difficultyMap.basic;
 
-    // Fetch data statistics to provide context about actual data in tables
+    // Select tables based on difficulty and rotation
+    const selectedTables = validateTableSelection(selectTables(difficulty, user.id), difficulty);
+    
+    console.log(`[generate-problem] Selected tables for ${difficulty}: ${selectedTables.join(', ')}`);
+
+    // Build schema string only for selected tables
+    const schemaInfo = selectedTables
+      .map(table => `**${table}**: ${TABLE_SCHEMAS[table]}`)
+      .join('\n');
+
+    // Fetch data statistics only for selected tables
     let dataStatsInfo = "";
     try {
       const statsResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/get-data-stats`, {
@@ -66,11 +176,12 @@ Deno.serve(async (req: Request) => {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         
-        // Format statistics into readable context
+        // Format statistics into readable context (only for selected tables)
         dataStatsInfo = "\n\n**IMPORTANT - Actual Data in Database**:\n";
         dataStatsInfo += "Use ONLY these values that actually exist in the database. Do NOT create problems asking for values that don't exist.\n\n";
         
-        for (const [tableName, tableStats] of Object.entries(statsData)) {
+        for (const tableName of selectedTables) {
+          const tableStats = statsData[tableName];
           if (tableStats && typeof tableStats === 'object' && 'row_count' in tableStats) {
             dataStatsInfo += `**${tableName}** (${tableStats.row_count} rows):\n`;
             
@@ -94,6 +205,12 @@ Deno.serve(async (req: Request) => {
             if (tableStats.date_range) {
               dataStatsInfo += `  - Date range: ${tableStats.date_range.min_date} to ${tableStats.date_range.max_date}\n`;
             }
+            if (tableStats.quantity_range) {
+              dataStatsInfo += `  - Quantity range: ${tableStats.quantity_range.min_quantity} - ${tableStats.quantity_range.max_quantity} (avg: ${Math.round(tableStats.quantity_range.avg_quantity)})\n`;
+            }
+            if (tableStats.discount_range) {
+              dataStatsInfo += `  - Discount range: ${tableStats.discount_range.min_discount}% - ${tableStats.discount_range.max_discount}% (avg: ${Math.round(tableStats.discount_range.avg_discount)}%)\n`;
+            }
             
             dataStatsInfo += "\n";
           }
@@ -106,17 +223,13 @@ Deno.serve(async (req: Request) => {
 
     const prompt = `Generate a realistic SQL practice problem for a learning game. The database has these tables:
 
-**customers**: customer_id, first_name, last_name, email, phone, city, state, country, registration_date, is_active
-**products**: product_id, product_name, category, price, cost, stock_quantity, supplier
-**orders**: order_id, customer_id, order_date, ship_date, total_amount, status
-**order_items**: order_item_id, order_id, product_id, quantity, unit_price, discount
-**employees**: employee_id, first_name, last_name, email, department, position, salary, hire_date, manager_id
-**sales**: sale_id, employee_id, sale_date, amount, region
+${schemaInfo}
 ${dataStatsInfo}
 
 Create a problem at the ${difficulty} level: ${difficultyDesc}
 ${topic ? `Focus on this topic: ${topic}` : ""}
 
+**IMPORTANT**: You can ONLY use the tables listed above (${selectedTables.join(', ')}). Do NOT reference any other tables.
 **CRITICAL**: Only use values that actually exist in the database as shown above. For example:
 - If countries only include "USA" or "United States", do NOT ask for "Canada" or other countries that don't exist
 - If categories only include specific values, use only those categories
