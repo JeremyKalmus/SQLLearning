@@ -1,13 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load .env from project root (one level up from scripts directory)
+const envPath = join(__dirname, '..', '.env');
+dotenv.config({ path: envPath });
+
+// Debug: Check if .env file exists
+if (!existsSync(envPath)) {
+  console.warn(`Warning: .env file not found at ${envPath}`);
+  console.warn('Trying to load from current directory...');
+  dotenv.config(); // Try current directory as fallback
+}
 
 // Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -16,6 +25,8 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 
 if (!supabaseUrl) {
   console.error('Error: VITE_SUPABASE_URL must be set in your .env file');
+  console.error(`Looking for .env at: ${envPath}`);
+  console.error(`Current working directory: ${process.cwd()}`);
   process.exit(1);
 }
 
