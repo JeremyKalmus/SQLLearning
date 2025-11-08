@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import flashcardsData from '../data/flashcards.json';
@@ -22,13 +22,109 @@ export default function Flashcards() {
     setShowOptions(false);
   }, [selectedLevel]);
 
+  const loadOptionsForCard = useCallback(async () => {
+    if (!currentCard) return;
+    
+    // Store the card ID to check if card changed during async operation
+    const cardIdToLoad = currentCard.id;
+    
+    setLoadingOptions(true);
+    try {
+      // First check if options are cached in the database
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('flashcard_options')
+        .select('options')
+        .eq('card_id', cardIdToLoad)
+        .maybeSingle();
+
+      if (!cacheError && cachedData?.options) {
+        // Use cached options - but only if card hasn't changed
+        if (currentCard?.id === cardIdToLoad) {
+          console.log('Using cached options for card:', cardIdToLoad);
+          setOptions(cachedData.options);
+          setShowOptions(true);
+        }
+        setLoadingOptions(false);
+        return;
+      }
+
+      // If not cached, generate new options via API
+      const { data, error } = await supabase.functions.invoke('generate-flashcard-options', {
+        body: {
+          card_id: cardIdToLoad,
+          correct_answer: currentCard.answer,
+          question: currentCard.question,
+          topic: currentCard.topic,
+          difficulty: currentCard.level || selectedLevel
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      // Check if the response contains an error message
+      if (data?.error) {
+        console.error('API returned error:', data.error);
+        throw new Error(data.error);
+      }
+      
+      // Only set options if card hasn't changed during async operation
+      if (currentCard?.id !== cardIdToLoad) {
+        console.log('Card changed during load, ignoring options');
+        return;
+      }
+      
+      if (data?.options && Array.isArray(data.options) && data.options.length > 0) {
+        console.log('Options received:', data.options);
+        setOptions(data.options);
+        setShowOptions(true);
+      } else {
+        console.warn('No valid options received, using fallback. Data:', data);
+        // Fallback to simple options if AI generation fails
+        const correctOption = { text: currentCard.answer, correct: true };
+        const wrongOptions = [
+          { text: 'Option A', correct: false },
+          { text: 'Option B', correct: false },
+          { text: 'Option C', correct: false }
+        ];
+        setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
+        setShowOptions(true);
+      }
+    } catch (error) {
+      // Only set fallback if card hasn't changed
+      if (currentCard?.id === cardIdToLoad) {
+        console.error('Error generating options:', error);
+        // Fallback to simple options
+        const correctOption = { text: currentCard.answer, correct: true };
+        const wrongOptions = [
+          { text: 'Option A', correct: false },
+          { text: 'Option B', correct: false },
+          { text: 'Option C', correct: false }
+        ];
+        setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
+        setShowOptions(true);
+      }
+    } finally {
+      if (currentCard?.id === cardIdToLoad) {
+        setLoadingOptions(false);
+      }
+    }
+  }, [currentCard, selectedLevel]);
+
   useEffect(() => {
     setIsFlipped(false);
     setShowOptions(false);
     setSelectedOption(null);
     setOptions([]);
     setLoadingOptions(false);
-  }, [currentIndex]);
+    
+    // Automatically load options for the current card
+    if (currentCard) {
+      loadOptionsForCard();
+    }
+  }, [currentIndex, currentCard, loadOptionsForCard]);
 
   const handleLevelChange = (level) => {
     setSelectedLevel(level);
@@ -50,62 +146,6 @@ export default function Flashcards() {
     setIsFlipped(!isFlipped);
   };
 
-  const handleShowOptions = async () => {
-    if (options.length === 0) {
-      setLoadingOptions(true);
-      try {
-        // Generate options using AI
-        const { data, error } = await supabase.functions.invoke('generate-flashcard-options', {
-          body: {
-            card_id: currentCard.id,
-            correct_answer: currentCard.answer,
-            question: currentCard.question,
-            topic: currentCard.topic,
-            difficulty: currentCard.level || selectedLevel
-          }
-        });
-
-        if (error) {
-          console.error('Supabase function error:', error);
-          throw error;
-        }
-
-        // Check if the response contains an error message
-        if (data?.error) {
-          console.error('API returned error:', data.error);
-          throw new Error(data.error);
-        }
-        
-        if (data?.options && Array.isArray(data.options) && data.options.length > 0) {
-          console.log('Options received:', data.options);
-          setOptions(data.options);
-        } else {
-          console.warn('No valid options received, using fallback. Data:', data);
-          // Fallback to simple options if AI generation fails
-          const correctOption = { text: currentCard.answer, correct: true };
-          const wrongOptions = [
-            { text: 'Option A', correct: false },
-            { text: 'Option B', correct: false },
-            { text: 'Option C', correct: false }
-          ];
-          setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
-        }
-      } catch (error) {
-        console.error('Error generating options:', error);
-        // Fallback to simple options
-        const correctOption = { text: currentCard.answer, correct: true };
-        const wrongOptions = [
-          { text: 'Option A', correct: false },
-          { text: 'Option B', correct: false },
-          { text: 'Option C', correct: false }
-        ];
-        setOptions([correctOption, ...wrongOptions].sort(() => Math.random() - 0.5));
-      } finally {
-        setLoadingOptions(false);
-      }
-    }
-    setShowOptions(true);
-  };
 
   const handleOptionSelect = async (option, index) => {
     setSelectedOption(index);
@@ -211,7 +251,49 @@ export default function Flashcards() {
             <div className="flashcard-front">
               <div className="card-topic">{currentCard.topic}</div>
               <div className="card-question">{currentCard.question}</div>
-              <div className="flip-hint">Click to reveal answer</div>
+              
+              <div className="flashcard-options">
+                {loadingOptions ? (
+                  <div className="options-loading">Loading options...</div>
+                ) : options.length === 0 ? (
+                  <div className="options-error">No options available. Please try again.</div>
+                ) : (
+                  <>
+                    <div className="options-list">
+                      {options.map((option, index) => (
+                        <button
+                          key={index}
+                          className={`option-btn ${
+                            selectedOption === index
+                              ? option.correct
+                                ? 'correct'
+                                : 'incorrect'
+                              : ''
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOptionSelect(option, index);
+                          }}
+                          disabled={selectedOption !== null}
+                        >
+                          {option.text}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedOption !== null && (
+                      <button 
+                        className="btn btn-primary options-next-btn" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNext();
+                        }}
+                      >
+                        Next Card
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
             <div className="flashcard-back">
               <div className="card-topic">{currentCard.topic}</div>
@@ -223,60 +305,10 @@ export default function Flashcards() {
                   <pre>{currentCard.example}</pre>
                 </div>
               )}
+              <div className="flip-hint">Click to flip back</div>
             </div>
           </div>
         </div>
-
-        {isFlipped && !showOptions && (
-          <div className="card-actions">
-            <button className="btn btn-danger" onClick={() => handleMarkCorrect(false)}>
-              Need More Practice
-            </button>
-            <button className="btn btn-secondary" onClick={handleShowOptions}>
-              Test Me
-            </button>
-            <button className="btn btn-primary" onClick={() => handleMarkCorrect(true)}>
-              Got It!
-            </button>
-          </div>
-        )}
-
-        {showOptions && (
-          <div className="options-container">
-            <h3>Select the correct answer:</h3>
-            {loadingOptions ? (
-              <div>Loading options...</div>
-            ) : options.length === 0 ? (
-              <div>No options available. Please try again.</div>
-            ) : (
-              <>
-                <div className="options-grid">
-                  {options.map((option, index) => (
-                    <button
-                      key={index}
-                      className={`option-btn ${
-                        selectedOption === index
-                          ? option.correct
-                            ? 'correct'
-                            : 'incorrect'
-                          : ''
-                      }`}
-                      onClick={() => handleOptionSelect(option, index)}
-                      disabled={selectedOption !== null}
-                    >
-                      {option.text}
-                    </button>
-                  ))}
-                </div>
-                {selectedOption !== null && (
-                  <button className="btn btn-primary" onClick={handleNext}>
-                    Next Card
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        )}
 
         <div className="navigation-buttons">
           <button
