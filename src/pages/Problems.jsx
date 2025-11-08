@@ -187,8 +187,8 @@ export default function Problems() {
         .eq('user_id', user.id);
       
       // Only save if it's a new problem (different title)
-      const isDuplicate = existingProblems?.some((sp: any) => {
-        return sp.problem_data?.title === data.title;
+      const isDuplicate = existingProblems && existingProblems.some((sp) => {
+        return sp.problem_data && sp.problem_data.title === data.title;
       });
       
       if (!isDuplicate) {
