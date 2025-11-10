@@ -82,6 +82,9 @@ export default function Problems() {
   // Hints management - track which hints have been revealed
   const [hintsRevealed, setHintsRevealed] = useState(0);
 
+  // Track number of submissions to control solution visibility
+  const [submissionCount, setSubmissionCount] = useState(0);
+
   const handleHintRevealed = (hintNumber) => {
     setHintsRevealed(Math.max(hintsRevealed, hintNumber));
   };
@@ -98,6 +101,7 @@ export default function Problems() {
       setResult(null);
       setFeedback(null);
       setHintsRevealed(0);
+      setSubmissionCount(0);
       setView('workspace');
     } catch (error) {
       // Error already handled in hook
@@ -109,6 +113,7 @@ export default function Problems() {
     try {
       await generateProblemFromHook(startProgress, completeProgress);
       setHintsRevealed(0);
+      setSubmissionCount(0);
     } catch (error) {
       setShowProgress(false);
     }
@@ -118,6 +123,7 @@ export default function Problems() {
   const handleCheckAnswer = async () => {
     try {
       await checkAnswerFromHook(query, problem, startProgress, completeProgress, view, loadSavedProblems);
+      setSubmissionCount(prev => prev + 1);
     } catch (error) {
       setShowProgress(false);
     }
@@ -142,6 +148,7 @@ export default function Problems() {
     setFeedback(null);
     setQuery('');
     setShowFeedbackDetails(false);
+    setSubmissionCount(0);
   };
 
   // Handle toggle feedback details
@@ -240,43 +247,50 @@ export default function Problems() {
             <ProblemDescription problem={problem} />
 
             <div className="workspace-main">
-              <div className="database-schema">
-                <SchemaViewer onTablePreview={handleTablePreview} />
+              <div className="workspace-left">
+                <div className="database-schema">
+                  <SchemaViewer onTablePreview={handleTablePreview} />
+                </div>
               </div>
 
-              <QueryEditor
-                query={query}
-                setQuery={setQuery}
-                executing={executing}
-                problem={problem}
-                onExecuteQuery={executeQuery}
-                onClearQuery={handleClearQuery}
-                onCheckAnswer={handleCheckAnswer}
-              />
+              <div className="workspace-right">
+                <QueryEditor
+                  query={query}
+                  setQuery={setQuery}
+                  executing={executing}
+                  problem={problem}
+                  onExecuteQuery={executeQuery}
+                  onClearQuery={handleClearQuery}
+                  onCheckAnswer={handleCheckAnswer}
+                />
+
+                <QueryResults result={result} />
+              </div>
             </div>
 
-            {problem?.hints && problem.hints.length > 0 && (
-              <HintsDisplay
-                problemHints={problem.hints}
-                onHintRevealed={handleHintRevealed}
+            <div className="workspace-bottom">
+              {problem?.hints && problem.hints.length > 0 && (
+                <HintsDisplay
+                  problemHints={problem.hints}
+                  onHintRevealed={handleHintRevealed}
+                />
+              )}
+
+              {problem?.solution && (
+                <SolutionDisplay
+                  solution={problem.solution}
+                  explanation={problem.explanation}
+                  hasSubmitted={submissionCount > 0}
+                />
+              )}
+
+              <FeedbackPanel
+                feedback={feedback}
+                showFeedbackDetails={showFeedbackDetails}
+                onToggleDetails={handleToggleFeedbackDetails}
+                onNextProblem={handleNextProblem}
               />
-            )}
-
-            <QueryResults result={result} />
-
-            {problem?.solution && (
-              <SolutionDisplay
-                solution={problem.solution}
-                explanation={problem.explanation}
-              />
-            )}
-
-            <FeedbackPanel
-              feedback={feedback}
-              showFeedbackDetails={showFeedbackDetails}
-              onToggleDetails={handleToggleFeedbackDetails}
-              onNextProblem={handleNextProblem}
-            />
+            </div>
           </div>
         )}
       </div>

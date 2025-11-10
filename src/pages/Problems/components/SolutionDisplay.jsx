@@ -1,8 +1,8 @@
-import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 
-export default function SolutionDisplay({ solution, explanation }) {
+export default function SolutionDisplay({ solution, explanation, hasSubmitted = false }) {
   const [isRevealed, setIsRevealed] = useState(false);
 
   if (!solution) return null;
@@ -16,10 +16,21 @@ export default function SolutionDisplay({ solution, explanation }) {
         </h4>
         <button
           className="btn-reveal-solution"
-          onClick={() => setIsRevealed(!isRevealed)}
-          title={isRevealed ? "Hide solution" : "Reveal solution"}
+          onClick={() => hasSubmitted && setIsRevealed(!isRevealed)}
+          title={
+            !hasSubmitted
+              ? "Submit your answer at least once to unlock the solution"
+              : isRevealed
+              ? "Hide solution"
+              : "Reveal solution"
+          }
+          disabled={!hasSubmitted}
         >
-          {isRevealed ? (
+          {!hasSubmitted ? (
+            <>
+              <Lock size={14} /> Locked
+            </>
+          ) : isRevealed ? (
             <>
               <EyeOff size={14} /> Hide Solution
             </>
@@ -30,7 +41,12 @@ export default function SolutionDisplay({ solution, explanation }) {
           )}
         </button>
       </div>
-      {isRevealed && (
+      {!hasSubmitted && (
+        <div className="solution-locked-message">
+          <p>Submit your answer for review at least once to unlock the solution.</p>
+        </div>
+      )}
+      {hasSubmitted && isRevealed && (
         <div className="solution-content">
           <div className="solution-query">
             <h5>SQL Query:</h5>
@@ -50,5 +66,6 @@ export default function SolutionDisplay({ solution, explanation }) {
 
 SolutionDisplay.propTypes = {
   solution: PropTypes.string.isRequired,
-  explanation: PropTypes.string
+  explanation: PropTypes.string,
+  hasSubmitted: PropTypes.bool
 };
