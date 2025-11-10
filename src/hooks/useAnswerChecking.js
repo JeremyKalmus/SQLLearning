@@ -49,10 +49,13 @@ export function useAnswerChecking() {
       setFeedback(data);
       setShowFeedbackDetails(false); // Reset to collapsed state
 
+      // Ensure problem_id is set - generate it from title if not present
+      const problemId = problem.id || problem.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
       await supabase.from('problem_history').insert({
         user_id: user.id,
         problem_title: problem.title,
-        problem_id: problem.id,
+        problem_id: problemId,
         difficulty: problem.difficulty,
         topic: problem.topic,
         query,

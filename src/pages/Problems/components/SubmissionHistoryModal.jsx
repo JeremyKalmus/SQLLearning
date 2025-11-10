@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { parsePraise } from '../../../utils/parsePraise';
 
 export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
   const { user } = useAuth();
@@ -20,18 +21,33 @@ export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
     try {
       setLoading(true);
 
-      const problemId = problem.id || problem.title;
+      const problemTitle = problem.title;
+      const problemId = problem.id;
 
+      // Query by problem_title (which all records have) and optionally filter by problem_id
+      // This handles both new records (with problem_id) and old records (without)
       const { data, error } = await supabase
         .from('problem_history')
-        .select('id, query, score, correct, feedback_data, created_at')
+        .select('id, query, score, correct, feedback_data, problem_id, problem_title, created_at')
         .eq('user_id', user.id)
-        .eq('problem_id', problemId)
+        .eq('problem_title', problemTitle)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setSubmissions(data || []);
+      // Filter to ensure we only get records for this specific problem
+      // If problem_id exists, prefer records with matching problem_id, but also include null ones
+      const filteredData = (data || []).filter(submission => {
+        if (problemId) {
+          // If we have a problem_id, include records that match it OR have null problem_id
+          // (null problem_id means it's an old record before we started tracking problem_id)
+          return submission.problem_id === problemId || submission.problem_id === null;
+        }
+        // If no problem_id, just match by title (all records should match)
+        return true;
+      });
+
+      setSubmissions(filteredData);
     } catch (error) {
       console.error('Error loading submission history:', error);
     } finally {
@@ -148,27 +164,37 @@ export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
                             <p className="feedback-message-text">{submission.feedback_data.message}</p>
                           )}
 
-                          {submission.feedback_data.praise && submission.feedback_data.praise.length > 0 && (
-                            <div className="feedback-section">
-                              <strong>✓ What you did well:</strong>
-                              <ul>
-                                {submission.feedback_data.praise.map((item, i) => (
-                                  <li key={i}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {submission.feedback_data.praise && (() => {
+                            const praiseItems = parsePraise(submission.feedback_data.praise);
+                            return praiseItems.length > 0 ? (
+                              <div className="feedback-section">
+                                <strong>✓ What you did well:</strong>
+                                <ul>
+                                  {praiseItems.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null;
+                          })()}
 
-                          {submission.feedback_data.improvements && submission.feedback_data.improvements.length > 0 && (
-                            <div className="feedback-section">
-                              <strong>→ Areas for improvement:</strong>
-                              <ul>
-                                {submission.feedback_data.improvements.map((item, i) => (
-                                  <li key={i}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {submission.feedback_data.improvements && (() => {
+                            const improvements = Array.isArray(submission.feedback_data.improvements) 
+                              ? submission.feedback_data.improvements.filter(item => item && String(item).trim())
+                              : (typeof submission.feedback_data.improvements === 'string' && submission.feedback_data.improvements.trim())
+                                ? [submission.feedback_data.improvements] 
+                                : [];
+                            return improvements.length > 0 ? (
+                              <div className="feedback-section">
+                                <strong>→ Areas for improvement:</strong>
+                                <ul>
+                                  {improvements.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       )}
                     </div>

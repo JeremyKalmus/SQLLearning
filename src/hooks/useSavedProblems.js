@@ -60,9 +60,15 @@ export function useSavedProblems(view) {
           const bestScore = historyData && historyData.length > 0 ? historyData[0].score : null;
           const solved = historyData?.some(h => h.correct) || false;
 
+          // Ensure problem object has the id field from problem_id
+          const problemWithId = {
+            ...problemData,
+            id: sp.problem_id || problemData.id || problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          };
+
           return {
             ...sp,
-            problem: problemData,
+            problem: problemWithId,
             best_score: bestScore,
             attempts: attempts,
             solved: solved,
@@ -82,7 +88,7 @@ export function useSavedProblems(view) {
     try {
       const { data, error } = await supabase
         .from('saved_problems')
-        .select('problem_data, current_query, current_notes')
+        .select('problem_data, problem_id, current_query, current_notes')
         .eq('id', problemId)
         .eq('user_id', user.id)
         .single();
@@ -96,8 +102,15 @@ export function useSavedProblems(view) {
         .eq('id', problemId)
         .eq('user_id', user.id);
 
+      // Ensure problem object has the id field from problem_id
+      const problemData = data.problem_data || {};
+      const problemWithId = {
+        ...problemData,
+        id: data.problem_id || problemData.id || problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      };
+
       return {
-        problem: data.problem_data,
+        problem: problemWithId,
         savedQuery: data.current_query || '',
         savedNotes: data.current_notes || ''
       };
