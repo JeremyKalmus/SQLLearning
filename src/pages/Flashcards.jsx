@@ -544,13 +544,7 @@ export default function Flashcards() {
         )}
 
         {batchCompleted && (
-          <div className="completion-notice" style={{ 
-            padding: '1rem', 
-            margin: '1rem 0', 
-            backgroundColor: '#e8f5e9', 
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
+          <div className="completion-notice">
             {allCompleted ? (
               <div>
                 <p>🎉 You've completed all available flashcards for this level!</p>
