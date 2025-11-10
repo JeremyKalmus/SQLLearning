@@ -6,13 +6,13 @@ import { useProgress } from '../hooks/useProgress';
 import { useProblemGeneration } from '../hooks/useProblemGeneration';
 import { useQueryExecution } from '../hooks/useQueryExecution';
 import { useAnswerChecking } from '../hooks/useAnswerChecking';
-import { useHints } from '../hooks/useHints';
 import { useSavedProblems } from '../hooks/useSavedProblems';
 import ProblemDescription from './Problems/components/ProblemDescription';
 import QueryEditor from './Problems/components/QueryEditor';
 import QueryResults from './Problems/components/QueryResults';
 import FeedbackPanel from './Problems/components/FeedbackPanel';
 import HintsDisplay from './Problems/components/HintsDisplay';
+import SolutionDisplay from './Problems/components/SolutionDisplay';
 import SavedProblemsList from './Problems/components/SavedProblemsList';
 import ProgressOverlay from './Problems/components/ProgressOverlay';
 
@@ -79,8 +79,12 @@ export default function Problems() {
     resetFeedback
   } = useAnswerChecking();
 
-  // Hints management
-  const { hintsUsed, hints, loadingHint, getHint, resetHints } = useHints(hasApiKey);
+  // Hints management - track which hints have been revealed
+  const [hintsRevealed, setHintsRevealed] = useState(0);
+
+  const handleHintRevealed = (hintNumber) => {
+    setHintsRevealed(Math.max(hintsRevealed, hintNumber));
+  };
 
   // Combined executing state
   const executing = generatingProblem || executingQuery || checkingAnswer;
@@ -93,7 +97,7 @@ export default function Problems() {
       setQuery('');
       setResult(null);
       setFeedback(null);
-      resetHints();
+      setHintsRevealed(0);
       setView('workspace');
     } catch (error) {
       // Error already handled in hook
@@ -104,7 +108,7 @@ export default function Problems() {
   const handleGenerateProblem = async () => {
     try {
       await generateProblemFromHook(startProgress, completeProgress);
-      resetHints();
+      setHintsRevealed(0);
     } catch (error) {
       setShowProgress(false);
     }
@@ -244,19 +248,28 @@ export default function Problems() {
                 query={query}
                 setQuery={setQuery}
                 executing={executing}
-                loadingHint={loadingHint}
-                hintsUsed={hintsUsed}
                 problem={problem}
                 onExecuteQuery={executeQuery}
                 onClearQuery={handleClearQuery}
-                onGetHint={() => getHint(problem, query)}
                 onCheckAnswer={handleCheckAnswer}
               />
             </div>
 
-            <HintsDisplay hints={hints} hintsUsed={hintsUsed} />
+            {problem?.hints && problem.hints.length > 0 && (
+              <HintsDisplay
+                problemHints={problem.hints}
+                onHintRevealed={handleHintRevealed}
+              />
+            )}
 
             <QueryResults result={result} />
+
+            {problem?.solution && (
+              <SolutionDisplay
+                solution={problem.solution}
+                explanation={problem.explanation}
+              />
+            )}
 
             <FeedbackPanel
               feedback={feedback}

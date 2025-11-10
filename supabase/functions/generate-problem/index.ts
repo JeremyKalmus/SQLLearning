@@ -221,7 +221,7 @@ Deno.serve(async (req: Request) => {
       // Continue without stats if there's an error
     }
 
-    const prompt = `Generate a realistic SQL practice problem for a learning game. The database has these tables:
+    const prompt = `Generate a realistic and VARIED SQL practice problem for a learning game. The database has these tables:
 
 ${schemaInfo}
 ${dataStatsInfo}
@@ -237,16 +237,30 @@ ${topic ? `Focus on this topic: ${topic}` : ""}
 - Use date ranges that exist in the data
 - Use price/amount ranges that exist in the data
 
+**VARIETY REQUIREMENTS**:
+Generate problems with DIVERSE scenarios and approaches. Vary the following:
+- Question type: comparisons, rankings, filtering, aggregations, time-series analysis, pattern matching
+- Business context: sales analysis, customer behavior, inventory management, employee performance, regional comparisons
+- SQL techniques: different JOIN types, window functions, subqueries, CTEs, CASE statements, date functions
+- Aggregation methods: COUNT, SUM, AVG, MIN, MAX, GROUP_CONCAT, different GROUP BY strategies
+- Filtering approaches: WHERE vs HAVING, multiple conditions, date ranges, pattern matching with LIKE
+- Output format: single values, lists, rankings, grouped summaries, pivoted data
+
+Be creative! Avoid generating similar "top N" or "count by category" problems repeatedly. Think of real business questions.
+
 Return a JSON object with:
-- "title": Short problem title
+- "title": Short, descriptive problem title
 - "description": Clear problem statement describing what to find (using only values that exist in the database)
 - "difficulty": The difficulty level
 - "topic": Main SQL concept being tested
-- "hints": Array of 3 progressive hints (from gentle to more specific)
-- "solution": The correct SQL query
-- "explanation": Brief explanation of the solution approach
+- "hints": Array of exactly 3 progressive hints:
+  - Hint 1 (gentle): High-level approach, which concepts/techniques to consider
+  - Hint 2 (moderate): Specific tables, columns, or functions to use
+  - Hint 3 (detailed): Step-by-step guidance without giving away the exact query
+- "solution": The complete, correct SQL query that solves the problem
+- "explanation": Brief explanation of the solution approach and key concepts used
 
-Make it realistic and educational. The problem should test understanding, not just syntax memorization.`;
+Make it realistic, educational, and interesting. The problem should test understanding and problem-solving, not just syntax memorization.`;
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -256,8 +270,8 @@ Make it realistic and educational. The problem should test understanding, not ju
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 3000,
         messages: [{
           role: "user",
           content: prompt,

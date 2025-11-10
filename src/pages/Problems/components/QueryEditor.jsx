@@ -1,4 +1,4 @@
-import { Play, X, Lightbulb, CheckCircle } from 'lucide-react';
+import { Play, X, CheckCircle } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql, SQLDialect } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -8,12 +8,9 @@ export default function QueryEditor({
   query,
   setQuery,
   executing,
-  loadingHint,
-  hintsUsed,
   problem,
   onExecuteQuery,
   onClearQuery,
-  onGetHint,
   onCheckAnswer
 }) {
   return (
@@ -67,15 +64,6 @@ export default function QueryEditor({
             <X size={16} />
             Clear
           </button>
-          <button
-            className="btn btn-hint"
-            onClick={onGetHint}
-            disabled={executing || loadingHint || hintsUsed >= 3 || !problem}
-            title={hintsUsed >= 3 ? 'All hints used' : `Get hint ${hintsUsed + 1}/3`}
-          >
-            <Lightbulb size={16} />
-            {loadingHint ? 'Loading...' : `Hint (${hintsUsed}/3)`}
-          </button>
         </div>
         <button
           className="btn btn-success"
@@ -94,12 +82,9 @@ QueryEditor.propTypes = {
   query: PropTypes.string.isRequired,
   setQuery: PropTypes.func.isRequired,
   executing: PropTypes.bool.isRequired,
-  loadingHint: PropTypes.bool.isRequired,
-  hintsUsed: PropTypes.number.isRequired,
   problem: PropTypes.object,
   onExecuteQuery: PropTypes.func.isRequired,
   onClearQuery: PropTypes.func.isRequired,
-  onGetHint: PropTypes.func.isRequired,
   onCheckAnswer: PropTypes.func.isRequired
 };
 
