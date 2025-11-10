@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lightbulb, CheckCircle } from 'lucide-react';
 import SchemaViewer from '../components/SchemaViewer';
 import TablePreviewModal from '../components/TablePreviewModal';
 import { useProgress } from '../hooks/useProgress';
@@ -11,15 +11,19 @@ import ProblemDescription from './Problems/components/ProblemDescription';
 import QueryEditor from './Problems/components/QueryEditor';
 import QueryResults from './Problems/components/QueryResults';
 import FeedbackPanel from './Problems/components/FeedbackPanel';
-import HintsDisplay from './Problems/components/HintsDisplay';
-import SolutionDisplay from './Problems/components/SolutionDisplay';
+import HintsModal from './Problems/components/HintsModal';
+import SolutionModal from './Problems/components/SolutionModal';
 import SavedProblemsList from './Problems/components/SavedProblemsList';
 import ProgressOverlay from './Problems/components/ProgressOverlay';
+import Notepad from './Problems/components/Notepad';
 
 export default function Problems() {
   const [view, setView] = useState('setup'); // 'setup' or 'workspace'
   const [previewTable, setPreviewTable] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [showHintsModal, setShowHintsModal] = useState(false);
+  const [showSolutionModal, setShowSolutionModal] = useState(false);
 
   // Progress management
   const {
@@ -102,6 +106,7 @@ export default function Problems() {
       setFeedback(null);
       setHintsRevealed(0);
       setSubmissionCount(0);
+      setNotes('');
       setView('workspace');
     } catch (error) {
       // Error already handled in hook
@@ -149,6 +154,7 @@ export default function Problems() {
     setQuery('');
     setShowFeedbackDetails(false);
     setSubmissionCount(0);
+    setNotes('');
   };
 
   // Handle toggle feedback details
@@ -246,51 +252,53 @@ export default function Problems() {
           <div className="problem-workspace">
             <ProblemDescription problem={problem} />
 
-            <div className="workspace-main">
-              <div className="workspace-left">
-                <div className="database-schema">
-                  <SchemaViewer onTablePreview={handleTablePreview} />
-                </div>
-              </div>
-
-              <div className="workspace-right">
-                <QueryEditor
-                  query={query}
-                  setQuery={setQuery}
-                  executing={executing}
-                  problem={problem}
-                  onExecuteQuery={executeQuery}
-                  onClearQuery={handleClearQuery}
-                  onCheckAnswer={handleCheckAnswer}
-                />
-
-                <QueryResults result={result} />
-              </div>
+            <div className="database-schema">
+              <SchemaViewer onTablePreview={handleTablePreview} />
             </div>
 
-            <div className="workspace-bottom">
+            <div className="workspace-actions">
               {problem?.hints && problem.hints.length > 0 && (
-                <HintsDisplay
-                  problemHints={problem.hints}
-                  onHintRevealed={handleHintRevealed}
-                />
+                <button
+                  className="btn btn-hint"
+                  onClick={() => setShowHintsModal(true)}
+                >
+                  <Lightbulb size={16} />
+                  View Hints
+                </button>
               )}
-
               {problem?.solution && (
-                <SolutionDisplay
-                  solution={problem.solution}
-                  explanation={problem.explanation}
-                  hasSubmitted={submissionCount > 0}
-                />
+                <button
+                  className="btn btn-success"
+                  onClick={() => setShowSolutionModal(true)}
+                >
+                  <CheckCircle size={16} />
+                  View Solution
+                </button>
               )}
-
-              <FeedbackPanel
-                feedback={feedback}
-                showFeedbackDetails={showFeedbackDetails}
-                onToggleDetails={handleToggleFeedbackDetails}
-                onNextProblem={handleNextProblem}
-              />
             </div>
+
+            <div className="workspace-editors">
+              <QueryEditor
+                query={query}
+                setQuery={setQuery}
+                executing={executing}
+                problem={problem}
+                onExecuteQuery={executeQuery}
+                onClearQuery={handleClearQuery}
+                onCheckAnswer={handleCheckAnswer}
+              />
+
+              <Notepad notes={notes} setNotes={setNotes} />
+            </div>
+
+            <QueryResults result={result} />
+
+            <FeedbackPanel
+              feedback={feedback}
+              showFeedbackDetails={showFeedbackDetails}
+              onToggleDetails={handleToggleFeedbackDetails}
+              onNextProblem={handleNextProblem}
+            />
           </div>
         )}
       </div>
@@ -302,6 +310,21 @@ export default function Problems() {
           setShowPreviewModal(false);
           setPreviewTable(null);
         }}
+      />
+
+      <HintsModal
+        problemHints={problem?.hints || []}
+        isOpen={showHintsModal}
+        onClose={() => setShowHintsModal(false)}
+        onHintRevealed={handleHintRevealed}
+      />
+
+      <SolutionModal
+        solution={problem?.solution || ''}
+        explanation={problem?.explanation}
+        hasSubmitted={submissionCount > 0}
+        isOpen={showSolutionModal}
+        onClose={() => setShowSolutionModal(false)}
       />
 
       <ProgressOverlay
