@@ -1137,6 +1137,21 @@ header h1,
     font-weight: 600;
 }
 
+.completion-notice {
+    padding: 1rem;
+    margin: 1rem 0;
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.completion-notice p {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
 .navigation-buttons {
     display: flex;
     justify-content: center;
