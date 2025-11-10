@@ -1868,6 +1868,219 @@ header h1,
     max-width: 900px;
 }
 
+/* Submission history modal styles */
+.modal-content-history {
+    max-width: 1000px;
+}
+
+.submission-history-loading,
+.submission-history-empty {
+    text-align: center;
+    padding: var(--spacing-4xl);
+    color: var(--text-secondary);
+}
+
+.submission-history-stats {
+    display: flex;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+
+.submission-history-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.submission-history-stats .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.submission-history-stats .stat-value {
+    font-size: 18px;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.solved-badge {
+    color: var(--secondary-color);
+    font-weight: 600;
+}
+
+.not-solved-badge {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.submission-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.submission-item {
+    background: var(--bg-color);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.submission-header {
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--transition-fast);
+}
+
+.submission-header:hover {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.submission-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.submission-number {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 15px;
+}
+
+.submission-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.submission-score-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.submission-score {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.submission-score.correct {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--secondary-color);
+}
+
+.submission-score.incorrect {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+}
+
+.btn-expand {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+
+.btn-expand:hover {
+    color: var(--primary-color);
+}
+
+.submission-details {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.submission-query {
+    margin-bottom: var(--spacing-lg);
+}
+
+.submission-query h5 {
+    color: var(--text-color);
+    margin-bottom: var(--spacing-sm);
+    font-size: 14px;
+}
+
+.submission-query pre {
+    background: var(--code-bg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: 0;
+    border: 1px solid var(--border-color);
+}
+
+.submission-query code {
+    color: var(--text-color);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.submission-feedback {
+    padding: var(--spacing-lg);
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary-color);
+}
+
+.submission-feedback h5 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    font-size: 14px;
+}
+
+.feedback-message-text {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-lg);
+}
+
+.submission-feedback .feedback-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.submission-feedback .feedback-section:last-child {
+    margin-bottom: 0;
+}
+
+.submission-feedback .feedback-section strong {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.submission-feedback .feedback-section ul {
+    padding-left: var(--spacing-xl);
+    margin: 0;
+}
+
+.submission-feedback .feedback-section li {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 .modal-header-solution {
     background: #0f766e;
     color: #a7f3d0;

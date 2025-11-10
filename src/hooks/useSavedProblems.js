@@ -24,7 +24,7 @@ export function useSavedProblems(view) {
       // Fetch saved problems
       const { data: savedData, error: savedError } = await supabase
         .from('saved_problems')
-        .select('id, problem_data, created_at, last_accessed')
+        .select('id, problem_data, problem_id, current_query, current_notes, created_at, last_accessed')
         .eq('user_id', user.id)
         .order('last_accessed', { ascending: false })
         .limit(50);
@@ -82,7 +82,7 @@ export function useSavedProblems(view) {
     try {
       const { data, error } = await supabase
         .from('saved_problems')
-        .select('problem_data')
+        .select('problem_data, current_query, current_notes')
         .eq('id', problemId)
         .eq('user_id', user.id)
         .single();
@@ -96,7 +96,11 @@ export function useSavedProblems(view) {
         .eq('id', problemId)
         .eq('user_id', user.id);
 
-      return data.problem_data;
+      return {
+        problem: data.problem_data,
+        savedQuery: data.current_query || '',
+        savedNotes: data.current_notes || ''
+      };
     } catch (error) {
       console.error('Error loading saved problem:', error);
       alert('Failed to load problem. Please try again.');

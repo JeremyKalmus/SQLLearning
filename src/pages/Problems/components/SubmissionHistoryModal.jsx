@@ -1,0 +1,190 @@
+import { History, X, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { supabase } from '../../../lib/supabase';
+
+export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
+  const { user } = useAuth();
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedSubmission, setExpandedSubmission] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && problem && user) {
+      loadSubmissions();
+    }
+  }, [isOpen, problem, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadSubmissions = async () => {
+    try {
+      setLoading(true);
+
+      const problemId = problem.id || problem.title;
+
+      const { data, error } = await supabase
+        .from('problem_history')
+        .select('id, query, score, correct, feedback_data, created_at')
+        .eq('user_id', user.id)
+        .eq('problem_id', problemId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setSubmissions(data || []);
+    } catch (error) {
+      console.error('Error loading submission history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleExpanded = (submissionId) => {
+    setExpandedSubmission(expandedSubmission === submissionId ? null : submissionId);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  if (!isOpen || !problem) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-content-history" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>
+            <History size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+            Submission History
+          </h3>
+          <button
+            className="btn-icon-small"
+            onClick={onClose}
+            title="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="modal-body">
+          {loading ? (
+            <div className="submission-history-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading submissions...</p>
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="submission-history-empty">
+              <p>No submissions yet. Submit your query to start tracking your progress!</p>
+            </div>
+          ) : (
+            <div className="submission-history-list">
+              <div className="submission-history-stats">
+                <div className="stat-item">
+                  <span className="stat-label">Total Attempts:</span>
+                  <span className="stat-value">{submissions.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Best Score:</span>
+                  <span className="stat-value">{Math.max(...submissions.map(s => s.score))}%</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Solved:</span>
+                  <span className="stat-value">
+                    {submissions.some(s => s.correct) ? (
+                      <span className="solved-badge">✓ Yes</span>
+                    ) : (
+                      <span className="not-solved-badge">✗ Not Yet</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {submissions.map((submission, index) => (
+                <div key={submission.id} className="submission-item">
+                  <div className="submission-header" onClick={() => toggleExpanded(submission.id)}>
+                    <div className="submission-info">
+                      <div className="submission-number">
+                        Attempt #{submissions.length - index}
+                      </div>
+                      <div className="submission-date">{formatDate(submission.created_at)}</div>
+                    </div>
+                    <div className="submission-score-row">
+                      <div className={`submission-score ${submission.correct ? 'correct' : 'incorrect'}`}>
+                        {submission.correct ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
+                        <span>{submission.score}%</span>
+                      </div>
+                      <button className="btn-expand">
+                        {expandedSubmission === submission.id ? (
+                          <ChevronUp size={18} />
+                        ) : (
+                          <ChevronDown size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {expandedSubmission === submission.id && (
+                    <div className="submission-details">
+                      <div className="submission-query">
+                        <h5>Your Query:</h5>
+                        <pre><code>{submission.query}</code></pre>
+                      </div>
+
+                      {submission.feedback_data && (
+                        <div className="submission-feedback">
+                          <h5>AI Feedback:</h5>
+
+                          {submission.feedback_data.message && (
+                            <p className="feedback-message-text">{submission.feedback_data.message}</p>
+                          )}
+
+                          {submission.feedback_data.praise && submission.feedback_data.praise.length > 0 && (
+                            <div className="feedback-section">
+                              <strong>✓ What you did well:</strong>
+                              <ul>
+                                {submission.feedback_data.praise.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {submission.feedback_data.improvements && submission.feedback_data.improvements.length > 0 && (
+                            <div className="feedback-section">
+                              <strong>→ Areas for improvement:</strong>
+                              <ul>
+                                {submission.feedback_data.improvements.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+SubmissionHistoryModal.propTypes = {
+  problem: PropTypes.object,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired
+};

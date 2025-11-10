@@ -52,11 +52,13 @@ export function useAnswerChecking() {
       await supabase.from('problem_history').insert({
         user_id: user.id,
         problem_title: problem.title,
+        problem_id: problem.id,
         difficulty: problem.difficulty,
         topic: problem.topic,
         query,
         score: data.score || 0,
-        correct: data.correct || false
+        correct: data.correct || false,
+        feedback_data: data // Store the complete feedback object
       });
 
       // Update statistics using the statsData we already fetched

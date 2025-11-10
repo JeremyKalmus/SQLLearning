@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Lightbulb, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Lightbulb, CheckCircle, History } from 'lucide-react';
 import SchemaViewer from '../components/SchemaViewer';
 import TablePreviewModal from '../components/TablePreviewModal';
 import { useProgress } from '../hooks/useProgress';
@@ -7,12 +7,14 @@ import { useProblemGeneration } from '../hooks/useProblemGeneration';
 import { useQueryExecution } from '../hooks/useQueryExecution';
 import { useAnswerChecking } from '../hooks/useAnswerChecking';
 import { useSavedProblems } from '../hooks/useSavedProblems';
+import { useProgressAutoSave } from '../hooks/useProgressAutoSave';
 import ProblemDescription from './Problems/components/ProblemDescription';
 import QueryEditor from './Problems/components/QueryEditor';
 import QueryResults from './Problems/components/QueryResults';
 import FeedbackPanel from './Problems/components/FeedbackPanel';
 import HintsModal from './Problems/components/HintsModal';
 import SolutionModal from './Problems/components/SolutionModal';
+import SubmissionHistoryModal from './Problems/components/SubmissionHistoryModal';
 import SavedProblemsList from './Problems/components/SavedProblemsList';
 import ProgressOverlay from './Problems/components/ProgressOverlay';
 import Notepad from './Problems/components/Notepad';
@@ -24,6 +26,7 @@ export default function Problems() {
   const [notes, setNotes] = useState('');
   const [showHintsModal, setShowHintsModal] = useState(false);
   const [showSolutionModal, setShowSolutionModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Progress management
   const {
@@ -96,17 +99,20 @@ export default function Problems() {
   // Combined executing state
   const executing = generatingProblem || executingQuery || checkingAnswer;
 
+  // Auto-save query and notes progress
+  useProgressAutoSave(problem, query, notes);
+
   // Load saved problem handler
   const loadSavedProblem = async (problemId) => {
     try {
-      const problemData = await loadSavedProblemFromHook(problemId);
+      const { problem: problemData, savedQuery, savedNotes } = await loadSavedProblemFromHook(problemId);
       setProblem(problemData);
-      setQuery('');
+      setQuery(savedQuery);
       setResult(null);
       setFeedback(null);
       setHintsRevealed(0);
       setSubmissionCount(0);
-      setNotes('');
+      setNotes(savedNotes);
       setView('workspace');
     } catch (error) {
       // Error already handled in hook
@@ -257,6 +263,13 @@ export default function Problems() {
             </div>
 
             <div className="workspace-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowHistoryModal(true)}
+              >
+                <History size={16} />
+                View Submission History
+              </button>
               {problem?.hints && problem.hints.length > 0 && (
                 <button
                   className="btn btn-hint"
@@ -325,6 +338,12 @@ export default function Problems() {
         hasSubmitted={submissionCount > 0}
         isOpen={showSolutionModal}
         onClose={() => setShowSolutionModal(false)}
+      />
+
+      <SubmissionHistoryModal
+        problem={problem}
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
       />
 
       <ProgressOverlay

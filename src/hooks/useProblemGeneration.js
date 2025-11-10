@@ -65,13 +65,20 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
         });
       }
 
+      // Generate a unique problem ID based on title (normalized)
+      const problemId = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      // Add the ID to the problem data
+      const problemWithId = { ...data, id: problemId };
+
       if (!isDuplicate) {
         // Save the problem
         const { error: saveError } = await supabase
           .from('saved_problems')
           .insert({
             user_id: user.id,
-            problem_data: data,
+            problem_id: problemId,
+            problem_data: problemWithId,
           });
 
         if (saveError) {
@@ -80,10 +87,10 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
       }
 
       completeProgress();
-      setProblem(data);
-      
+      setProblem(problemWithId);
+
       if (onProblemGenerated) {
-        onProblemGenerated(data);
+        onProblemGenerated(problemWithId);
       }
       
       if (onSavedProblemsReload) {
