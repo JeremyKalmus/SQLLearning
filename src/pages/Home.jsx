@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Target, Flame, Lightbulb, BookOpen, Code, TrendingUp } from 'lucide-react';
+import { Target, Flame, Lightbulb, BookOpen, Code, TrendingUp, GraduationCap } from 'lucide-react';
 
 export default function Home() {
   const { user } = useAuth();
@@ -139,6 +139,14 @@ export default function Home() {
         <div className="actions-section">
           <h2>What would you like to do?</h2>
           <div className="action-cards">
+            <Link to="/learn" className="action-card">
+              <div className="action-icon">
+                <GraduationCap size={36} />
+              </div>
+              <h3>Learn Concepts</h3>
+              <p>Interactive tutorials with hands-on challenges</p>
+            </Link>
+
             <Link to="/flashcards" className="action-card">
               <div className="action-icon">
                 <BookOpen size={36} />

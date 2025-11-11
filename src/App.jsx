@@ -13,6 +13,8 @@ import Problems from './pages/Problems';
 import Assessment from './pages/Assessment';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentResults from './pages/AssessmentResults';
+import Learn from './pages/Learn';
+import TutorialView from './pages/Learn/TutorialView';
 
 function AppContent() {
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false);
@@ -81,6 +83,22 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AssessmentResults />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learn"
+            element={
+              <ProtectedRoute>
+                <Learn />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learn/:slug"
+            element={
+              <ProtectedRoute>
+                <TutorialView />
               </ProtectedRoute>
             }
           />

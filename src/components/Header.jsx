@@ -26,8 +26,9 @@ export default function Header({ onToggleCheatSheet }) {
 
         <nav className="nav-links">
           <Link to="/">Dashboard</Link>
-          <Link to="/flashcards">Flashcards</Link>
+          <Link to="/learn">Learn</Link>
           <Link to="/problems">Problems</Link>
+          <Link to="/flashcards">Flashcards</Link>
           <Link to="/assessment">Assessment</Link>
           <button
             className="cheatsheet-btn"
