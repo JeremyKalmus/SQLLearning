@@ -102,15 +102,50 @@ export default function Learn() {
             <p>Loading tutorials...</p>
           </div>
         ) : (
-          <div className="action-cards">
-            {tutorials.map(tutorial => (
-              <TutorialCard
-                key={tutorial.id}
-                tutorial={tutorial}
-                userProgress={tutorial.userProgress}
-              />
-            ))}
-          </div>
+          (() => {
+            const completedTutorials = tutorials.filter(t => t.userProgress?.status === 'completed');
+            const notStartedTutorials = tutorials.filter(t => t.userProgress?.status !== 'completed');
+            
+            return (
+              <>
+                {/* Not Started Section */}
+                {notStartedTutorials.length > 0 && (
+                  <div style={{ marginTop: '32px', marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-color)' }}>
+                      Not Started
+                    </h2>
+                    <div className="action-cards">
+                      {notStartedTutorials.map(tutorial => (
+                        <TutorialCard
+                          key={tutorial.id}
+                          tutorial={tutorial}
+                          userProgress={tutorial.userProgress}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed Section */}
+                {completedTutorials.length > 0 && (
+                  <div style={{ marginTop: notStartedTutorials.length > 0 ? '32px' : '0' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-color)' }}>
+                      Completed
+                    </h2>
+                    <div className="action-cards">
+                      {completedTutorials.map(tutorial => (
+                        <TutorialCard
+                          key={tutorial.id}
+                          tutorial={tutorial}
+                          userProgress={tutorial.userProgress}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()
         )}
 
         {tutorials.length === 0 && !loading && (
