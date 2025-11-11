@@ -11,14 +11,22 @@ export default function QueryEditor({
   problem,
   onExecuteQuery,
   onClearQuery,
-  onCheckAnswer
+  onCheckAnswer,
+  actions
 }) {
   return (
     <div className="query-editor">
-      <h4>Your SQL Query</h4>
+      <div className="query-editor-header">
+        <h4>Your SQL Query</h4>
+        {actions && (
+          <div className="query-editor-actions">
+            {actions}
+          </div>
+        )}
+      </div>
       <CodeMirror
         value={query}
-        height="300px"
+        height="340px"
         extensions={[sql({
           dialect: SQLDialect.StandardSQL,
           upperCaseKeywords: true
@@ -85,6 +93,7 @@ QueryEditor.propTypes = {
   problem: PropTypes.object,
   onExecuteQuery: PropTypes.func.isRequired,
   onClearQuery: PropTypes.func.isRequired,
-  onCheckAnswer: PropTypes.func.isRequired
+  onCheckAnswer: PropTypes.func.isRequired,
+  actions: PropTypes.node
 };
 

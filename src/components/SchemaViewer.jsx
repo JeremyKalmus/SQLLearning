@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 export default function SchemaViewer({ onTablePreview }) {
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -31,62 +30,14 @@ export default function SchemaViewer({ onTablePreview }) {
     }
   };
 
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-  };
-
-  if (loading) {
-    return (
-      <div className="schema-viewer">
-        <div className="schema-header">
-          <h4>Database Schema</h4>
-          <button className="btn-icon-small" onClick={toggleExpanded} title="Toggle Schema">
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-        </div>
-        <div className="schema-loading">Loading schema...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="schema-viewer">
-        <div className="schema-header">
-          <h4>Database Schema</h4>
-          <button className="btn-icon-small" onClick={toggleExpanded} title="Toggle Schema">
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-        </div>
-        <div className="schema-error">Error loading schema: {error}</div>
-      </div>
-    );
-  }
-
-  if (!schema || Object.keys(schema).length === 0) {
-    return (
-      <div className="schema-viewer">
-        <div className="schema-header">
-          <h4>Database Schema</h4>
-          <button className="btn-icon-small" onClick={toggleExpanded} title="Toggle Schema">
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-        </div>
-        <div className="schema-empty">No schema data available</div>
-      </div>
-    );
-  }
-
   return (
     <div className="schema-viewer">
       <div className="schema-header">
         <h4>Database Schema</h4>
-        <button className="btn-icon-small" onClick={toggleExpanded} title="Toggle Schema">
-          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
       </div>
-      
-      {expanded && (
+      {loading && <div className="schema-loading">Loading schema...</div>}
+      {error && !loading && <div className="schema-error">Error loading schema: {error}</div>}
+      {!loading && !error && schema && Object.keys(schema).length > 0 ? (
         <div id="schema-content" className="schema-content">
           <div id="schema-tables" className="schema-tables">
             {Object.entries(schema).map(([tableName, tableInfo]) => {
@@ -127,6 +78,9 @@ export default function SchemaViewer({ onTablePreview }) {
             })}
           </div>
         </div>
+      ) : null}
+      {!loading && !error && schema && Object.keys(schema).length === 0 && (
+        <div className="schema-empty">No schema data available</div>
       )}
     </div>
   );

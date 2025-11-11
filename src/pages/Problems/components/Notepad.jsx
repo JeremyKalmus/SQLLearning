@@ -11,7 +11,7 @@ export default function Notepad({ notes, setNotes }) {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Take notes here...&#10;&#10;• Plan your query&#10;• Write down key insights&#10;• Track your progress"
+        placeholder="Capture quick thoughts, outline joins, or jot test cases..."
         className="notepad-textarea"
       />
     </div>

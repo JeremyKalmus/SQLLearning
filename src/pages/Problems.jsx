@@ -80,8 +80,6 @@ export default function Problems() {
     feedback,
     setFeedback,
     executing: checkingAnswer,
-    showFeedbackDetails,
-    setShowFeedbackDetails,
     checkAnswer: checkAnswerFromHook,
     resetFeedback
   } = useAnswerChecking();
@@ -91,6 +89,7 @@ export default function Problems() {
 
   // Track number of submissions to control solution visibility
   const [submissionCount, setSubmissionCount] = useState(0);
+  const [solutionUnlocked, setSolutionUnlocked] = useState(false);
 
   const handleHintRevealed = (hintNumber) => {
     setHintsRevealed(Math.max(hintsRevealed, hintNumber));
@@ -112,6 +111,7 @@ export default function Problems() {
       setFeedback(null);
       setHintsRevealed(0);
       setSubmissionCount(0);
+      setSolutionUnlocked(false);
       setNotes(savedNotes);
       setView('workspace');
     } catch (error) {
@@ -125,6 +125,7 @@ export default function Problems() {
       await generateProblemFromHook(startProgress, completeProgress);
       setHintsRevealed(0);
       setSubmissionCount(0);
+      setSolutionUnlocked(false);
     } catch (error) {
       setShowProgress(false);
     }
@@ -135,6 +136,7 @@ export default function Problems() {
     try {
       await checkAnswerFromHook(query, problem, startProgress, completeProgress, view, loadSavedProblems);
       setSubmissionCount(prev => prev + 1);
+      setSolutionUnlocked(true);
     } catch (error) {
       setShowProgress(false);
     }
@@ -158,14 +160,9 @@ export default function Problems() {
     setResult(null);
     setFeedback(null);
     setQuery('');
-    setShowFeedbackDetails(false);
     setSubmissionCount(0);
     setNotes('');
-  };
-
-  // Handle toggle feedback details
-  const handleToggleFeedbackDetails = () => {
-    setShowFeedbackDetails(!showFeedbackDetails);
+    setSolutionUnlocked(false);
   };
 
   if (loading) {
@@ -256,62 +253,70 @@ export default function Problems() {
 
         {problem && (
           <div className="problem-workspace">
-            <ProblemDescription problem={problem} />
-
-            <div className="database-schema">
-              <SchemaViewer onTablePreview={handleTablePreview} />
+            <div className="workspace-row workspace-row-top">
+              <ProblemDescription problem={problem} />
+              <div className="workspace-schema-panel">
+                <SchemaViewer onTablePreview={handleTablePreview} />
+              </div>
             </div>
 
-            <div className="workspace-actions">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowHistoryModal(true)}
-              >
-                <History size={16} />
-                View Submission History
-              </button>
-              {problem?.hints && problem.hints.length > 0 && (
-                <button
-                  className="btn btn-hint"
-                  onClick={() => setShowHintsModal(true)}
-                >
-                  <Lightbulb size={16} />
-                  View Hints
-                </button>
-              )}
-              {problem?.solution && (
-                <button
-                  className="btn btn-success"
-                  onClick={() => setShowSolutionModal(true)}
-                >
-                  <CheckCircle size={16} />
-                  View Solution
-                </button>
-              )}
+            <div className="workspace-row workspace-row-middle">
+              <div className="workspace-query-panel">
+                <QueryEditor
+                  query={query}
+                  setQuery={setQuery}
+                  executing={executing}
+                  problem={problem}
+                  onExecuteQuery={executeQuery}
+                  onClearQuery={handleClearQuery}
+                  onCheckAnswer={handleCheckAnswer}
+                  actions={
+                    <div className="workspace-primary-actions">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowHistoryModal(true)}
+                      >
+                        <History size={16} />
+                        History
+                      </button>
+                      {problem?.hints && problem.hints.length > 0 && (
+                        <button
+                          className="btn btn-hint"
+                          onClick={() => setShowHintsModal(true)}
+                        >
+                          <Lightbulb size={16} />
+                          Hints
+                        </button>
+                      )}
+                      {problem?.solution && (
+                        <button
+                          className="btn btn-success"
+                          onClick={() => setShowSolutionModal(true)}
+                        >
+                          <CheckCircle size={16} />
+                          Solution
+                        </button>
+                      )}
+                    </div>
+                  }
+                />
+                <QueryResults result={result} />
+              </div>
+
+              <div className="workspace-notes-panel">
+                <Notepad notes={notes} setNotes={setNotes} />
+              </div>
             </div>
 
-            <div className="workspace-editors">
-              <QueryEditor
-                query={query}
-                setQuery={setQuery}
-                executing={executing}
-                problem={problem}
-                onExecuteQuery={executeQuery}
-                onClearQuery={handleClearQuery}
-                onCheckAnswer={handleCheckAnswer}
-              />
+            {feedback && (
+              <div className="workspace-row workspace-row-bottom">
+                <FeedbackPanel
+                  feedback={feedback}
+                  onNextProblem={handleNextProblem}
+                />
+              </div>
+            )}
 
-              <Notepad notes={notes} setNotes={setNotes} />
-            </div>
-
-            <QueryResults result={result} />
-
-            <FeedbackPanel
-              feedback={feedback}
-              showFeedbackDetails={showFeedbackDetails}
-              onToggleDetails={handleToggleFeedbackDetails}
-              onNextProblem={handleNextProblem}
-            />
           </div>
         )}
       </div>
@@ -335,7 +340,7 @@ export default function Problems() {
       <SolutionModal
         solution={problem?.solution || ''}
         explanation={problem?.explanation}
-        hasSubmitted={submissionCount > 0}
+        hasSubmitted={solutionUnlocked || submissionCount > 0}
         isOpen={showSolutionModal}
         onClose={() => setShowSolutionModal(false)}
       />

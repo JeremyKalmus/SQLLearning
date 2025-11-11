@@ -9,7 +9,6 @@ export function useAnswerChecking() {
   const { user } = useAuth();
   const [feedback, setFeedback] = useState(null);
   const [executing, setExecuting] = useState(false);
-  const [showFeedbackDetails, setShowFeedbackDetails] = useState(false);
 
   const checkAnswer = async (query, problem, startProgress, completeProgress, view, onSavedProblemsReload) => {
     if (!query.trim() || !problem) {
@@ -47,7 +46,6 @@ export function useAnswerChecking() {
 
       completeProgress();
       setFeedback(data);
-      setShowFeedbackDetails(false); // Reset to collapsed state
 
       // Ensure problem_id is set - generate it from title if not present
       const problemId = problem.id || problem.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -92,15 +90,12 @@ export function useAnswerChecking() {
 
   const resetFeedback = () => {
     setFeedback(null);
-    setShowFeedbackDetails(false);
   };
 
   return {
     feedback,
     setFeedback,
     executing,
-    showFeedbackDetails,
-    setShowFeedbackDetails,
     checkAnswer,
     resetFeedback
   };
