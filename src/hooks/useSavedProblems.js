@@ -24,7 +24,7 @@ export function useSavedProblems(view) {
       // Fetch saved problems
       const { data: savedData, error: savedError } = await supabase
         .from('saved_problems')
-        .select('id, problem_data, problem_id, current_query, current_notes, created_at, last_accessed')
+        .select('id, problem_data, problem_id, difficulty, sub_difficulty, primary_topic, current_query, current_notes, created_at, last_accessed')
         .eq('user_id', user.id)
         .order('last_accessed', { ascending: false })
         .limit(50);
@@ -61,13 +61,31 @@ export function useSavedProblems(view) {
           const solved = historyData?.some(h => h.correct) || false;
 
           // Ensure problem object has the id field from problem_id
+          const rawDifficulty = sp.difficulty || problemData?.difficulty || 'basic';
+          const normalizedDifficulty = typeof rawDifficulty === 'string'
+            ? rawDifficulty.trim().toLowerCase()
+            : 'basic';
+          const difficultyLabel = typeof rawDifficulty === 'string'
+            ? rawDifficulty.trim()
+            : 'Basic';
+          const subDifficulty = sp.sub_difficulty || problemData?.sub_difficulty || null;
+          const primaryTopic = sp.primary_topic || problemData?.primary_topic || null;
+
           const problemWithId = {
             ...problemData,
-            id: sp.problem_id || problemData.id || problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            id: sp.problem_id || problemData?.id || (problemData?.title ? problemData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : undefined),
+            difficulty: normalizedDifficulty,
+            sub_difficulty: subDifficulty,
+            primary_topic: primaryTopic,
+            display_difficulty: subDifficulty || difficultyLabel || 'Basic'
           };
 
           return {
             ...sp,
+            difficulty: normalizedDifficulty,
+            difficulty_label: difficultyLabel,
+            sub_difficulty: subDifficulty,
+            primary_topic: primaryTopic,
             problem: problemWithId,
             best_score: bestScore,
             attempts: attempts,
@@ -88,7 +106,7 @@ export function useSavedProblems(view) {
     try {
       const { data, error } = await supabase
         .from('saved_problems')
-        .select('problem_data, problem_id, current_query, current_notes')
+        .select('problem_data, problem_id, difficulty, sub_difficulty, primary_topic, current_query, current_notes')
         .eq('id', problemId)
         .eq('user_id', user.id)
         .single();
@@ -104,9 +122,19 @@ export function useSavedProblems(view) {
 
       // Ensure problem object has the id field from problem_id
       const problemData = data.problem_data || {};
+      const rawDifficulty = data.difficulty || problemData?.difficulty || 'basic';
+      const normalizedDifficulty = typeof rawDifficulty === 'string'
+        ? rawDifficulty.trim().toLowerCase()
+        : 'basic';
+      const subDifficulty = data.sub_difficulty || problemData?.sub_difficulty || null;
+      const primaryTopic = data.primary_topic || problemData?.primary_topic || null;
       const problemWithId = {
         ...problemData,
-        id: data.problem_id || problemData.id || problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        id: data.problem_id || problemData.id || (problemData.title ? problemData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : undefined),
+        difficulty: normalizedDifficulty,
+        sub_difficulty: subDifficulty,
+        primary_topic: primaryTopic,
+        display_difficulty: subDifficulty || (typeof rawDifficulty === 'string' ? rawDifficulty.trim() : 'Basic')
       };
 
       return {

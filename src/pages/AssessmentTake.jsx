@@ -6,7 +6,7 @@ import ProgressBar from '../components/Assessment/ProgressBar';
 
 export default function AssessmentTake() {
   const { userAssessmentId } = useParams();
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState([]);
@@ -17,10 +17,20 @@ export default function AssessmentTake() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!session) {
+      navigate('/assessment');
+      return;
+    }
+
     fetchAssessment();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, session]);
 
   const fetchAssessment = async () => {
+    if (!session?.access_token) return;
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-assessment`,

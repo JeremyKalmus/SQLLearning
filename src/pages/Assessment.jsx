@@ -5,34 +5,58 @@ import { supabase } from '../lib/supabase';
 import { BarChart3, Target, Clock, TrendingUp } from 'lucide-react';
 
 export default function Assessment() {
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
   const [lastAssessment, setLastAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAssessmentHistory();
-  }, []);
+    if (authLoading) return;
 
-  const checkAssessmentHistory = async () => {
-    const { data } = await supabase
-      .from('user_assessments')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false })
-      .limit(1);
-
-    if (data && data.length > 0) {
-      setHasCompletedAssessment(true);
-      setLastAssessment(data[0]);
+    if (!session?.user) {
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    checkAssessmentHistory();
+  }, [authLoading, session]);
+
+  const checkAssessmentHistory = async () => {
+    try {
+      if (!session?.user) {
+        throw new Error('No authenticated user');
+      }
+
+      const { data, error } = await supabase
+        .from('user_assessments')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        setHasCompletedAssessment(true);
+        setLastAssessment(data[0]);
+      }
+    } catch (err) {
+      console.error('Error loading assessment history:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startAssessment = async () => {
+    if (!session?.access_token || !session.user) {
+      alert('You need to be signed in to start an assessment.');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-assessment`,

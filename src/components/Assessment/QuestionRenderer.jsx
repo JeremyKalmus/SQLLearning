@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 export default function QuestionRenderer({ question, onSubmit, feedback }) {
   const [answer, setAnswer] = useState(null);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(Date.now());
   const [submitted, setSubmitted] = useState(false);
 
   const questionData = question.question_data;
@@ -15,6 +15,22 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
     setSubmitted(true);
     onSubmit(answer, timeSpent);
   };
+
+  useEffect(() => {
+    setSubmitted(false);
+    setStartTime(Date.now());
+
+    if (question.question_type === 'fill_blank') {
+      const blanksLength = questionData?.blanks?.length || 0;
+      setAnswer({ blanks: Array(blanksLength).fill('') });
+    } else if (question.question_type === 'write_query') {
+      setAnswer({ query: '' });
+    } else if (question.question_type === 'find_error') {
+      setAnswer({ fixedQuery: '' });
+    } else {
+      setAnswer(null);
+    }
+  }, [question, questionData]);
 
   const renderQuestion = () => {
     switch (question.question_type) {
@@ -190,30 +206,30 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
       {!submitted && (
         <button
           onClick={handleSubmit}
-          disabled={!answer}
+          disabled={
+            !answer ||
+            (question.question_type === 'fill_blank' &&
+              !(answer.blanks || []).every((blank) => typeof blank === 'string' && blank.trim().length > 0)) ||
+            (question.question_type === 'write_query' &&
+              !(answer.query || '').trim().length) ||
+            (question.question_type === 'find_error' &&
+              !(answer.fixedQuery || '').trim().length)
+          }
           className="btn btn-primary submit-answer-btn"
         >
           Submit Answer
         </button>
       )}
 
-      {feedback && (
-        <div className={`feedback ${feedback.isCorrect ? 'correct' : 'incorrect'}`}>
+      {submitted && feedback && (
+        <div className="feedback neutral">
           <div className="feedback-header">
-            {feedback.isCorrect ? (
-              <>
-                <CheckCircle size={24} />
-                <strong>Correct!</strong>
-              </>
-            ) : (
-              <>
-                <XCircle size={24} />
-                <strong>Incorrect</strong>
-              </>
-            )}
-            <span className="feedback-score">Score: {feedback.score}/100</span>
+            <CheckCircle size={20} />
+            <strong>Answer submitted</strong>
           </div>
-          <p className="feedback-message">{feedback.feedback}</p>
+          {feedback.feedback && (
+            <p className="feedback-message">{feedback.feedback}</p>
+          )}
         </div>
       )}
     </div>

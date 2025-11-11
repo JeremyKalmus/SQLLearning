@@ -28,6 +28,7 @@ export default function Header({ onToggleCheatSheet }) {
           <Link to="/">Dashboard</Link>
           <Link to="/flashcards">Flashcards</Link>
           <Link to="/problems">Problems</Link>
+          <Link to="/assessment">Assessment</Link>
           <button
             className="cheatsheet-btn"
             onClick={onToggleCheatSheet}

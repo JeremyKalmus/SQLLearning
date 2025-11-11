@@ -66,7 +66,19 @@ ADD COLUMN IF NOT EXISTS concept_tags TEXT[];
 -- Add indexes for filtering
 CREATE INDEX IF NOT EXISTS idx_saved_problems_sub_difficulty ON saved_problems(sub_difficulty);
 CREATE INDEX IF NOT EXISTS idx_saved_problems_primary_topic ON saved_problems(primary_topic);
-CREATE INDEX IF NOT EXISTS idx_saved_problems_difficulty_topic ON saved_problems(difficulty, primary_topic);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'saved_problems'
+      AND column_name = 'difficulty'
+  ) THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_saved_problems_difficulty_topic ON saved_problems(difficulty, primary_topic)';
+  END IF;
+END;
+$$;
 
 -- Add columns to problem_history
 ALTER TABLE problem_history

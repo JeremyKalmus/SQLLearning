@@ -59,6 +59,18 @@ export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
     setExpandedSubmission(expandedSubmission === submissionId ? null : submissionId);
   };
 
+  const formatImprovement = (item) => {
+    if (!item) return null;
+    if (typeof item === 'string') return item.trim();
+    if (typeof item === 'object') {
+      const parts = [item.issue, item.explanation, item.solution]
+        .filter(value => typeof value === 'string' && value.trim().length > 0)
+        .map(value => value.trim());
+      return parts.join(' — ') || JSON.stringify(item);
+    }
+    return String(item).trim();
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -121,7 +133,18 @@ export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
                 </div>
               </div>
 
-              {submissions.map((submission, index) => (
+              {submissions.map((submission, index) => {
+                const feedback = submission.feedback_data;
+                const praiseItems = feedback?.praise ? parsePraise(feedback.praise) : [];
+                const improvementItems = feedback?.improvements
+                  ? (Array.isArray(feedback.improvements) ? feedback.improvements : [feedback.improvements])
+                      .map(formatImprovement)
+                      .filter(item => typeof item === 'string' && item.length > 0)
+                  : [];
+                const hasHighlights = praiseItems.length > 0 || improvementItems.length > 0;
+                const feedbackHeadingId = `historical-feedback-${submission.id}`;
+
+                return (
                 <div key={submission.id} className="submission-item">
                   <div className="submission-header" onClick={() => toggleExpanded(submission.id)}>
                     <div className="submission-info">
@@ -156,51 +179,62 @@ export default function SubmissionHistoryModal({ problem, isOpen, onClose }) {
                         <pre><code>{submission.query}</code></pre>
                       </div>
 
-                      {submission.feedback_data && (
+                        {feedback && (
                         <div className="submission-feedback">
-                          <h5>AI Feedback:</h5>
+                            <div className={`feedback-panel ${feedback.correct ? 'success' : 'info'}`}>
+                              <div className="feedback-content" role="region" aria-labelledby={feedbackHeadingId}>
+                                <div className="feedback-header">
+                                  <div className="feedback-header-left">
+                                    <h4 id={feedbackHeadingId}>AI Feedback</h4>
+                                    <span className={`feedback-status ${feedback.correct ? 'feedback-status-correct' : 'feedback-status-incorrect'}`}>
+                                      {feedback.correct ? 'Looks Good' : 'Needs Work'}
+                                    </span>
+                                  </div>
+                                  <div className="feedback-score">
+                                    <span className="feedback-score-label">Score</span>
+                                    <span className="feedback-score-value">{feedback.score ?? 0}</span>
+                                  </div>
+                                </div>
 
-                          {submission.feedback_data.message && (
-                            <p className="feedback-message-text">{submission.feedback_data.message}</p>
-                          )}
+                                <div className="feedback-body">
+                                  {feedback.message && (
+                                    <p className="feedback-message">{feedback.message}</p>
+                                  )}
 
-                          {submission.feedback_data.praise && (() => {
-                            const praiseItems = parsePraise(submission.feedback_data.praise);
-                            return praiseItems.length > 0 ? (
-                              <div className="feedback-section">
-                                <strong>✓ What you did well:</strong>
+                                  {hasHighlights && (
+                                    <div className="feedback-highlights">
+                                      {praiseItems.length > 0 && (
+                                        <div className="feedback-column feedback-column-positive">
+                                          <h5>What you did well</h5>
                                 <ul>
                                   {praiseItems.map((item, i) => (
                                     <li key={i}>{item}</li>
                                   ))}
                                 </ul>
                               </div>
-                            ) : null;
-                          })()}
-
-                          {submission.feedback_data.improvements && (() => {
-                            const improvements = Array.isArray(submission.feedback_data.improvements) 
-                              ? submission.feedback_data.improvements.filter(item => item && String(item).trim())
-                              : (typeof submission.feedback_data.improvements === 'string' && submission.feedback_data.improvements.trim())
-                                ? [submission.feedback_data.improvements] 
-                                : [];
-                            return improvements.length > 0 ? (
-                              <div className="feedback-section">
-                                <strong>→ Areas for improvement:</strong>
+                                      )}
+                                      {improvementItems.length > 0 && (
+                                        <div className="feedback-column feedback-column-improve">
+                                          <h5>Suggestions</h5>
                                 <ul>
-                                  {improvements.map((item, i) => (
+                                            {improvementItems.map((item, i) => (
                                     <li key={i}>{item}</li>
                                   ))}
                                 </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            ) : null;
-                          })()}
+                            </div>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

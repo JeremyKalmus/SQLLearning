@@ -10,6 +10,8 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
   const [hasApiKey, setHasApiKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [difficulty, setDifficulty] = useState('intermediate');
+  const [subDifficulty, setSubDifficulty] = useState(null);
+  const [primaryTopic, setPrimaryTopic] = useState(null);
   const [problem, setProblem] = useState(null);
   const [executing, setExecuting] = useState(false);
 
@@ -46,7 +48,12 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-problem', {
-        body: { difficulty, user_id: user.id }
+        body: {
+          difficulty,
+          subDifficulty,
+          primaryTopic,
+          user_id: user.id
+        }
       });
 
       if (error) throw error;
@@ -68,8 +75,24 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
       // Generate a unique problem ID based on title (normalized)
       const problemId = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-      // Add the ID to the problem data
-      const problemWithId = { ...data, id: problemId };
+      const rawDifficulty = data.difficulty || difficulty || 'basic';
+      const normalizedDifficulty = typeof rawDifficulty === 'string'
+        ? rawDifficulty.trim().toLowerCase()
+        : 'basic';
+      const subDifficultyValue = data.sub_difficulty || subDifficulty || null;
+      const primaryTopicValue = data.primary_topic || null;
+
+      // Add the ID and normalized fields to the problem data
+      const problemWithId = {
+        ...data,
+        id: problemId,
+        difficulty: normalizedDifficulty,
+        sub_difficulty: subDifficultyValue,
+        primary_topic: primaryTopicValue,
+        display_difficulty: subDifficultyValue || (typeof rawDifficulty === 'string'
+          ? rawDifficulty.trim()
+          : 'Basic')
+      };
 
       if (!isDuplicate) {
         // Save the problem
@@ -79,6 +102,11 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
             user_id: user.id,
             problem_id: problemId,
             problem_data: problemWithId,
+            difficulty: normalizedDifficulty,
+            sub_difficulty: subDifficultyValue,
+            primary_topic: primaryTopicValue,
+            secondary_topics: data.concept_tags || [],
+            concept_tags: data.concept_tags || []
           });
 
         if (saveError) {
@@ -110,6 +138,10 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
     loading,
     difficulty,
     setDifficulty,
+    subDifficulty,
+    setSubDifficulty,
+    primaryTopic,
+    setPrimaryTopic,
     problem,
     setProblem,
     executing,

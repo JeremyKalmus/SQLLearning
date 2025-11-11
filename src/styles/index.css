@@ -665,15 +665,18 @@ header h1,
 }
 
 .feedback-message.correct {
-    background: #064e3b;
-    color: var(--secondary-color);
-    border-left: 4px solid var(--secondary-color);
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
 }
 
 .feedback-message.incorrect {
-    background: #7f1d1d;
-    color: #fecaca;
-    border-left: 4px solid var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.feedback.neutral {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.25);
 }
 
 .saved-problem-card {
@@ -1366,14 +1369,45 @@ header h1,
 }
 
 .problems-container {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     width: 100%;
+    padding: var(--spacing-lg);
 }
 
 .problems-container h1 {
     margin-bottom: var(--spacing-2xl);
     color: var(--text-color);
+}
+
+/* Grid layout for setup page */
+.problem-setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-2xl);
+    align-items: start;
+}
+
+@media (max-width: 1200px) {
+    .problem-setup-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.problem-setup-card,
+.saved-problems-card {
+    background: var(--card-bg);
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+}
+
+.problem-setup-card h3,
+.saved-problems-card h3 {
+    margin-bottom: var(--spacing-xl);
+    color: var(--text-color);
+    font-size: 20px;
+    text-align: center;
 }
 
 .problem-setup {
@@ -1387,7 +1421,20 @@ header h1,
 }
 
 .setup-options {
-    margin-top: var(--spacing-3xl);
+    margin-top: var(--spacing-lg);
+}
+
+.setup-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .setup-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .saved-problems-section {
@@ -1404,13 +1451,72 @@ header h1,
     text-align: center;
 }
 
+/* Saved Problems Container and Filters */
+.saved-problems-container {
+    width: 100%;
+}
+
+.saved-problems-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    flex: 1 1 180px;
+    min-width: 160px;
+    max-width: 220px;
+}
+
+.filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin-bottom: 0;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+
+.filter-group select:hover {
+    border-color: var(--primary-color);
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
 .saved-problems-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-lg);
-    max-height: 500px;
+    max-height: 600px;
     overflow-y: auto;
     padding: 10px;
+    text-align: left;
 }
 
 .saved-problems-list::-webkit-scrollbar {
@@ -3710,8 +3816,7 @@ header h1,
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    border-radius: 10px;
+    background: var(--primary-color);
     transition: width 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -4007,6 +4112,8 @@ header h1,
 
 .option-text {
     flex: 1;
+    color: var(--text-color);
+    line-height: 1.4;
 }
 
 .code-editor,
@@ -4020,16 +4127,18 @@ header h1,
 }
 
 .query-template {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(15, 23, 42, 0.7);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
     margin-bottom: var(--spacing-lg);
+    border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .query-template pre {
     font-family: 'Monaco', 'Menlo', monospace;
     white-space: pre-wrap;
     line-height: 1.6;
+    color: var(--text-color);
 }
 
 .blanks-input {
@@ -4047,14 +4156,33 @@ header h1,
 .blank-item label {
     min-width: 80px;
     font-weight: 500;
+    color: var(--text-secondary);
 }
 
 .blank-input {
     flex: 1;
-    padding: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     border: 1px solid rgba(148, 163, 184, 0.3);
     border-radius: var(--radius-md);
     font-size: 1rem;
+    background: rgba(30, 41, 59, 0.6);
+    color: var(--text-color);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.blank-input::placeholder {
+    color: rgba(226, 232, 240, 0.6);
+}
+
+.blank-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+.blank-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .submit-answer-btn {
@@ -4077,6 +4205,11 @@ header h1,
 .feedback.incorrect {
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.3);
+}
+
+.feedback.neutral {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.25);
 }
 
 .feedback-header {
@@ -4350,4 +4483,140 @@ header h1,
     .score-value {
         font-size: 2.5rem;
     }
+/* Topic Filtering Feature Styles */
+
+/* Topic Badges */
+.problem-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.topic-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-md);
+    white-space: normal;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+.problem-metadata {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Sub-Difficulty Selector */
+.sub-difficulty-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+}
+
+.sub-difficulty-option {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background-color: rgba(30, 41, 59, 0.5);
+}
+
+.sub-difficulty-option:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
+.sub-difficulty-option.selected {
+    border-color: var(--primary-color);
+    background-color: rgba(99, 102, 241, 0.15);
+}
+
+.sub-difficulty-option input[type="radio"] {
+    margin-top: 2px;
+    margin-right: var(--spacing-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.sub-difficulty-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sub-difficulty-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.sub-difficulty-description {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+/* Saved Problems with Topics */
+.saved-problem-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--spacing-sm);
+}
+
+.saved-problem-topics .topic-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
+.blank-item label {
+    min-width: 80px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.blank-input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    background: rgba(30, 41, 59, 0.6);
+    color: var(--text-color);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.blank-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.feedback.incorrect .feedback-header {
+    color: #dc2626;
+}
+
+.feedback-score {
+    margin-left: auto;
+    font-weight: 700;
+}
+
+.feedback-message {
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.feedback.neutral .feedback-header {
+    color: var(--text-color);
 }

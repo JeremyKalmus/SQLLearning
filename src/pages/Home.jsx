@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Target, Flame, Lightbulb, BookOpen, Code } from 'lucide-react';
+import { Target, Flame, Lightbulb, BookOpen, Code, TrendingUp } from 'lucide-react';
 
 export default function Home() {
   const { user } = useAuth();
@@ -153,6 +153,14 @@ export default function Home() {
               </div>
               <h3>Solve Problems</h3>
               <p>Practice with AI-generated SQL challenges</p>
+            </Link>
+
+            <Link to="/assessment" className="action-card">
+              <div className="action-icon">
+                <TrendingUp size={36} />
+              </div>
+              <h3>Take Assessment</h3>
+              <p>Measure your skills and find gaps to improve</p>
             </Link>
           </div>
         </div>

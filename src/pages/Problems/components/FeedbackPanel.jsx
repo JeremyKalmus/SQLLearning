@@ -42,9 +42,19 @@ export default function FeedbackPanel({
                 <div className="feedback-column feedback-column-improve">
                   <h5>Suggestions</h5>
                   <ul>
-                    {feedback.improvements.map((improvement, i) => (
-                      <li key={i}>{improvement}</li>
-                    ))}
+                    {feedback.improvements.map((improvement, i) => {
+                      // Handle both string and object formats
+                      if (typeof improvement === 'string') {
+                        return <li key={i}>{improvement}</li>;
+                      } else if (typeof improvement === 'object' && improvement !== null) {
+                        // If it's an object with issue, explanation, solution structure
+                        const text = improvement.explanation || improvement.issue || improvement.solution || JSON.stringify(improvement);
+                        return <li key={i}>{text}</li>;
+                      } else {
+                        // Fallback for other types
+                        return <li key={i}>{String(improvement)}</li>;
+                      }
+                    })}
                   </ul>
                 </div>
               )}
