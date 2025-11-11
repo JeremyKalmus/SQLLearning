@@ -50,9 +50,14 @@ export default function SavedProblemsList({
             <div className="saved-problem-meta">
               <div className="saved-problem-meta-left">
                 <span className={`difficulty-badge difficulty-${(p?.difficulty || 'basic').toLowerCase()}`}>
-                  {p?.difficulty || 'basic'}
+                  {p?.sub_difficulty || p?.difficulty || 'basic'}
                 </span>
-                <span className="saved-problem-topic">{p?.topic || 'General SQL'}</span>
+                {p?.primary_topic && (
+                  <span className="topic-badge">{p.primary_topic}</span>
+                )}
+                {!p?.primary_topic && p?.topic && (
+                  <span className="saved-problem-topic">{p.topic}</span>
+                )}
               </div>
               <div className="saved-problem-meta-right">
                 {bestScore !== null && (

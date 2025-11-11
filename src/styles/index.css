@@ -3745,3 +3745,94 @@ header h1,
     text-align: center;
     font-weight: 600;
 }
+
+/* Topic Filtering Feature Styles */
+
+/* Topic Badges */
+.problem-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.topic-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+}
+
+.problem-metadata {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Sub-Difficulty Selector */
+.sub-difficulty-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.sub-difficulty-option {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background-color: rgba(30, 41, 59, 0.5);
+}
+
+.sub-difficulty-option:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
+.sub-difficulty-option.selected {
+    border-color: var(--primary-color);
+    background-color: rgba(99, 102, 241, 0.15);
+}
+
+.sub-difficulty-option input[type="radio"] {
+    margin-top: 2px;
+    margin-right: var(--spacing-md);
+    cursor: pointer;
+}
+
+.sub-difficulty-info {
+    flex: 1;
+}
+
+.sub-difficulty-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.sub-difficulty-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Saved Problems with Topics */
+.saved-problem-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--spacing-sm);
+}
+
+.saved-problem-topics .topic-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+}

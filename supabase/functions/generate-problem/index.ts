@@ -71,6 +71,19 @@ function selectTables(difficulty: string, userId: string): string[] {
 }
 
 /**
+ * Get description for sub-difficulty levels
+ */
+function getSubDifficultyDescription(subDiff: string): string {
+  const descriptions: Record<string, string> = {
+    'intermediate+': 'Introduce ONE Advanced concept (Window Functions OR CTEs OR Subqueries) combined with Intermediate foundations (JOINs, GROUP BY). This is a bridge level - keep it accessible.',
+    'advanced-': 'Focus on a single Advanced concept with straightforward application. Easier than standard Advanced problems.',
+    'advanced': 'Standard Advanced level combining multiple Advanced techniques',
+    'advanced+': 'Complex Advanced problem requiring multiple Advanced concepts and nested structures. Very challenging.'
+  };
+  return descriptions[subDiff] || '';
+}
+
+/**
  * Validate table selection ensures all relationships are satisfied
  * If a table is selected, its related tables should also be included if needed
  */
@@ -131,7 +144,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { difficulty = "basic", topic = null } = await req.json();
+    const { difficulty = "basic", subDifficulty = null, primaryTopic = null, topic = null } = await req.json();
 
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .from("user_api_keys")
@@ -221,13 +234,21 @@ Deno.serve(async (req: Request) => {
       // Continue without stats if there's an error
     }
 
+    // Build sub-difficulty and topic context
+    const subDifficultyContext = subDifficulty
+      ? `\n**SUB-DIFFICULTY**: ${getSubDifficultyDescription(subDifficulty)}`
+      : '';
+
+    const topicContext = primaryTopic
+      ? `\n**REQUIRED TOPIC**: This problem MUST focus on the SQL concept: "${primaryTopic}". The problem should test and require this concept to solve correctly. Make sure the solution demonstrates clear usage of ${primaryTopic}.`
+      : (topic ? `\nFocus on this topic: ${topic}` : '');
+
     const prompt = `Generate a realistic and VARIED SQL practice problem for a learning game. The database has these tables:
 
 ${schemaInfo}
 ${dataStatsInfo}
 
-Create a problem at the ${difficulty} level: ${difficultyDesc}
-${topic ? `Focus on this topic: ${topic}` : ""}
+Create a problem at the ${difficulty} level: ${difficultyDesc}${subDifficultyContext}${topicContext}
 
 **IMPORTANT**: You can ONLY use the tables listed above (${selectedTables.join(', ')}). Do NOT reference any other tables.
 **CRITICAL**: Only use values that actually exist in the database as shown above. For example:
@@ -252,7 +273,10 @@ Return a JSON object with:
 - "title": Short, descriptive problem title
 - "description": Clear problem statement describing what to find (using only values that exist in the database)
 - "difficulty": The difficulty level
+- "sub_difficulty": The sub-difficulty level if applicable (${subDifficulty || 'null'})
 - "topic": Main SQL concept being tested
+- "primary_topic": The main SQL concept required for this problem (e.g., "Window Functions", "CTEs", "Subqueries", "JOINs", "Aggregates")${primaryTopic ? ` - MUST be "${primaryTopic}"` : ''}
+- "concept_tags": Array of ALL SQL concepts involved (e.g., ["Window Functions", "JOINs", "Aggregates"])
 - "hints": Array of exactly 3 progressive hints:
   - Hint 1 (gentle): High-level approach, which concepts/techniques to consider
   - Hint 2 (moderate): Specific tables, columns, or functions to use
