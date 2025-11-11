@@ -65,8 +65,14 @@ Deno.serve(async (req: Request) => {
     let score = 0;
     let feedback = "";
 
-    // Check answer based on question type
-    switch (question.question_type) {
+    // Handle skipped questions
+    if (response.skipped === true) {
+      isCorrect = false;
+      score = 0;
+      feedback = "Question skipped. No points awarded.";
+    } else {
+      // Check answer based on question type
+      switch (question.question_type) {
       case "multiple_choice": {
         isCorrect = response.selectedOption === questionData.correctAnswer;
         score = isCorrect ? 100 : 0;
@@ -75,26 +81,11 @@ Deno.serve(async (req: Request) => {
       }
 
       case "write_query": {
-        // Use AI to check query
-        const { data: apiKeyData, error: apiKeyError } = await supabase
-          .from("user_api_keys")
-          .select("encrypted_api_key")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (apiKeyError || !apiKeyData?.encrypted_api_key) {
-          throw new Error("API key not configured");
-        }
-
-        const checkResult = await checkQueryWithAI(
-          apiKeyData.encrypted_api_key,
-          questionData,
-          response.query
-        );
-
-        isCorrect = checkResult.isCorrect;
-        score = checkResult.score;
-        feedback = checkResult.feedback;
+        // Don't check with AI here - will be checked at the end during complete-assessment
+        // Just save the response for now
+        isCorrect = false; // Will be determined later
+        score = 0; // Will be calculated later
+        feedback = "Answer saved. Will be evaluated at the end of the assessment.";
         break;
       }
 
@@ -132,6 +123,7 @@ Deno.serve(async (req: Request) => {
       default: {
         throw new Error(`Unknown question type: ${question.question_type}`);
       }
+    }
     }
 
     // Save response

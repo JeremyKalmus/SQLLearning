@@ -106,6 +106,54 @@ export default function AssessmentTake() {
     }
   };
 
+  const handleSkip = async (questionId, timeSpent) => {
+    setSubmitting(true);
+
+    try {
+      const result = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-assessment-response`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            userAssessmentId,
+            questionId,
+            response: { skipped: true },
+            timeSpentSeconds: timeSpent,
+          }),
+        }
+      );
+
+      if (!result.ok) {
+        throw new Error('Failed to skip question');
+      }
+
+      const feedback = await result.json();
+
+      setResponses((prev) => ({
+        ...prev,
+        [questionId]: { response: { skipped: true }, feedback },
+      }));
+
+      // Move to next question immediately
+      setTimeout(() => {
+        if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex((prev) => prev + 1);
+          setSubmitting(false);
+        } else {
+          completeAssessment();
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Error skipping question:', error);
+      alert('Failed to skip question. Please try again.');
+      setSubmitting(false);
+    }
+  };
+
   const completeAssessment = async () => {
     try {
       const totalTime = Math.floor((Date.now() - startTime) / 1000);
@@ -169,6 +217,9 @@ export default function AssessmentTake() {
             question={currentQuestion}
             onSubmit={(response, timeSpent) =>
               handleResponseSubmit(currentQuestion.id, response, timeSpent)
+            }
+            onSkip={(timeSpent) =>
+              handleSkip(currentQuestion.id, timeSpent)
             }
             feedback={responses[currentQuestion.id]?.feedback}
           />

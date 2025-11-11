@@ -4240,8 +4240,8 @@ header h1,
 
 /* Assessment Results Page */
 .assessment-results {
-    padding: var(--spacing-xl);
-    max-width: 1400px;
+    padding: var(--spacing-lg);
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -4251,38 +4251,40 @@ header h1,
 
 .results-header {
     text-align: center;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
 }
 
 .trophy-icon {
     color: #f59e0b;
-    margin: 0 auto var(--spacing-md);
+    margin: 0 auto var(--spacing-sm);
 }
 
 .results-header h1 {
-    font-size: 2rem;
-    margin-bottom: var(--spacing-md);
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
 }
 
 .overall-score {
-    font-size: 3rem;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--primary-color);
-    margin: var(--spacing-md) 0;
+    margin: var(--spacing-sm) 0;
 }
 
 .score-value {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
 }
 
 .score-max {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--text-secondary);
 }
 
 .recommended-level {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
 }
 
 .recommended-level strong {
@@ -4292,17 +4294,17 @@ header h1,
 
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: var(--spacing-xl);
-    margin-bottom: var(--spacing-xl);
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
 }
 
 .radar-chart-card,
 .skill-breakdown-card,
 .recommendations-card {
     background: var(--card-bg);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
     box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.55);
     border: 1px solid rgba(148, 163, 184, 0.1);
 }
@@ -4313,24 +4315,53 @@ header h1,
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
-    font-size: 1.3rem;
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
 }
 
 .radar-chart-wrapper {
-    max-width: 500px;
+    max-width: 450px;
     margin: 0 auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
 }
 
 .skill-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+.skill-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.skill-list::-webkit-scrollbar-track {
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 3px;
+}
+
+.skill-list::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 3px;
+}
+
+.skill-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
 }
 
 .skill-item {
     width: 100%;
+    padding-bottom: var(--spacing-sm);
+}
+
+.skill-item:not(:last-child) {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    padding-bottom: var(--spacing-md);
 }
 
 .skill-header {
@@ -4342,17 +4373,25 @@ header h1,
 
 .skill-name {
     font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-color);
 }
 
 .skill-score-badge {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+}
+
+.skill-score-badge .score-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
 }
 
 .score-label {
-    font-size: 0.75rem;
-    padding: 4px 8px;
+    font-size: 0.7rem;
+    padding: 3px 6px;
     border-radius: var(--radius-sm);
     font-weight: 600;
     text-transform: uppercase;
@@ -4412,7 +4451,7 @@ header h1,
 }
 
 .recommendation-section {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .recommendation-section:last-child {
@@ -4420,8 +4459,10 @@ header h1,
 }
 
 .recommendation-section h3 {
-    font-size: 1.1rem;
-    margin-bottom: var(--spacing-md);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--text-color);
 }
 
 .topics-list {
@@ -4454,7 +4495,7 @@ header h1,
     color: var(--primary-color);
     text-decoration: underline;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     text-align: left;
     padding: var(--spacing-xs) 0;
 }
@@ -4467,7 +4508,7 @@ header h1,
     display: flex;
     justify-content: center;
     gap: var(--spacing-md);
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
 }
 
 /* Responsive Design */

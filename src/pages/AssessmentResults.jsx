@@ -94,11 +94,20 @@ export default function AssessmentResults() {
         max: 100,
         ticks: {
           stepSize: 20,
+          font: {
+            size: 10,
+          },
+          color: 'rgba(148, 163, 184, 0.8)',
         },
         pointLabels: {
           font: {
-            size: 12,
+            size: 11,
+            weight: '600',
           },
+          color: '#f1f5f9',
+        },
+        grid: {
+          color: 'rgba(148, 163, 184, 0.2)',
         },
       },
     },
@@ -140,7 +149,7 @@ export default function AssessmentResults() {
     <div className="assessment-results">
       <div className="results-container">
         <header className="results-header">
-          <Trophy size={48} className="trophy-icon" />
+          <Trophy size={36} className="trophy-icon" />
           <h1>Your SQL Skill Profile</h1>
           <div className="overall-score">
             <span className="score-value">{results.overall_score}</span>
@@ -154,7 +163,7 @@ export default function AssessmentResults() {
         <div className="results-grid">
           <div className="radar-chart-card">
             <h2>
-              <TrendingUp size={24} />
+              <TrendingUp size={20} />
               Skills Overview
             </h2>
             <div className="radar-chart-wrapper">
@@ -164,7 +173,7 @@ export default function AssessmentResults() {
 
           <div className="skill-breakdown-card">
             <h2>
-              <Target size={24} />
+              <Target size={20} />
               Detailed Scores
             </h2>
             <div className="skill-list">
@@ -197,7 +206,7 @@ export default function AssessmentResults() {
           recommendations.tutorialsToTake.length > 0) && (
           <div className="recommendations-card">
             <h2>
-              <BookOpen size={24} />
+              <BookOpen size={20} />
               Personalized Recommendations
             </h2>
 

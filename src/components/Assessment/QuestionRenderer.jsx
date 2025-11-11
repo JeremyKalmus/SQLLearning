@@ -3,8 +3,9 @@ import CodeMirror from '@uiw/react-codemirror';
 import { sql, SQLDialect } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { CheckCircle } from 'lucide-react';
+import SchemaViewer from '../SchemaViewer';
 
-export default function QuestionRenderer({ question, onSubmit, feedback }) {
+export default function QuestionRenderer({ question, onSubmit, onSkip, feedback }) {
   const [answer, setAnswer] = useState(null);
   const [startTime, setStartTime] = useState(Date.now());
   const [submitted, setSubmitted] = useState(false);
@@ -15,6 +16,14 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
     const timeSpent = Math.floor((Date.now() - startTime) / 1000);
     setSubmitted(true);
     onSubmit(answer, timeSpent);
+  };
+
+  const handleSkip = () => {
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    setSubmitted(true);
+    if (onSkip) {
+      onSkip(timeSpent);
+    }
   };
 
   useEffect(() => {
@@ -36,13 +45,21 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
   const renderQuestion = () => {
     switch (question.question_type) {
       case 'multiple_choice':
+        // Convert literal \n strings to actual newlines
+        const codeSnippet = questionData.code 
+          ? (questionData.code || '')
+              .replace(/\\n/g, '\n')
+              .replace(/\\r\\n/g, '\n')
+              .replace(/\\r/g, '\n')
+          : null;
+        
         return (
           <div className="question-multiple-choice">
             <h2>{questionData.question}</h2>
-            {questionData.code && (
+            {codeSnippet && (
               <div className="question-code">
                 <CodeMirror
-                  value={questionData.code}
+                  value={codeSnippet}
                   extensions={[sql({
                     dialect: SQLDialect.StandardSQL,
                     upperCaseKeywords: true
@@ -88,6 +105,9 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
           <div className="question-write-query">
             <h2>{questionData.question}</h2>
             <p className="question-description">{questionData.description}</p>
+            <div className="schema-viewer-container" style={{ marginBottom: '1rem' }}>
+              <SchemaViewer />
+            </div>
             <div className="code-editor">
               <CodeMirror
                 value={answer?.query || ''}
@@ -124,12 +144,18 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
         );
 
       case 'read_query':
+        // Convert literal \n strings to actual newlines
+        const queryToRead = (questionData.queryToRead || '')
+          .replace(/\\n/g, '\n')
+          .replace(/\\r\\n/g, '\n')
+          .replace(/\\r/g, '\n');
+        
         return (
           <div className="question-read-query">
             <h2>{questionData.question}</h2>
             <div className="query-to-read">
               <CodeMirror
-                value={questionData.queryToRead}
+                value={queryToRead}
                 extensions={[sql({
                   dialect: SQLDialect.StandardSQL,
                   upperCaseKeywords: true
@@ -147,6 +173,7 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
                   borderRadius: 'var(--radius-lg)',
                   overflow: 'hidden',
                 }}
+                minHeight="150px"
               />
             </div>
             <p className="read-query-prompt">What does this query return?</p>
@@ -171,13 +198,19 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
         );
 
       case 'find_error':
+        // Convert literal \n strings to actual newlines
+        const brokenQuery = (questionData.brokenQuery || '')
+          .replace(/\\n/g, '\n')
+          .replace(/\\r\\n/g, '\n')
+          .replace(/\\r/g, '\n');
+        
         return (
           <div className="question-find-error">
             <h2>{questionData.question}</h2>
             <div className="broken-query">
               <h3>Broken Query:</h3>
               <CodeMirror
-                value={questionData.brokenQuery}
+                value={brokenQuery}
                 extensions={[sql({
                   dialect: SQLDialect.StandardSQL,
                   upperCaseKeywords: true
@@ -234,11 +267,17 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
         );
 
       case 'fill_blank':
+        // Convert literal \n strings to actual newlines
+        const queryTemplate = (questionData.queryTemplate || '')
+          .replace(/\\n/g, '\n')
+          .replace(/\\r\\n/g, '\n')
+          .replace(/\\r/g, '\n');
+        
         return (
           <div className="question-fill-blank">
             <h2>{questionData.question}</h2>
             <div className="query-template">
-              <pre>{questionData.queryTemplate}</pre>
+              <pre>{queryTemplate}</pre>
             </div>
             <div className="blanks-input">
               {questionData.blanks.map((blank, index) => (
@@ -279,32 +318,45 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
       {renderQuestion()}
 
       {!submitted && (
-        <button
-          onClick={handleSubmit}
-          disabled={
-            !answer ||
-            (question.question_type === 'fill_blank' &&
-              !(answer.blanks || []).every((blank) => typeof blank === 'string' && blank.trim().length > 0)) ||
-            (question.question_type === 'write_query' &&
-              !(answer.query || '').trim().length) ||
-            (question.question_type === 'find_error' &&
-              !(answer.fixedQuery || '').trim().length)
-          }
-          className="btn btn-primary submit-answer-btn"
-        >
-          Submit Answer
-        </button>
+        <div className="question-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button
+            onClick={handleSubmit}
+            disabled={
+              !answer ||
+              (question.question_type === 'fill_blank' &&
+                !(answer.blanks || []).every((blank) => typeof blank === 'string' && blank.trim().length > 0)) ||
+              (question.question_type === 'write_query' &&
+                !(answer.query || '').trim().length) ||
+              (question.question_type === 'find_error' &&
+                !(answer.fixedQuery || '').trim().length)
+            }
+            className="btn btn-primary submit-answer-btn"
+          >
+            Submit Answer
+          </button>
+          <button
+            onClick={handleSkip}
+            className="btn btn-secondary"
+            style={{ 
+              backgroundColor: 'transparent',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-color)'
+            }}
+          >
+            Skip Question
+          </button>
+        </div>
       )}
 
-      {submitted && feedback && (
-        <div className="feedback neutral">
+      {submitted && (
+        <div className={`feedback ${feedback?.feedback?.includes('skipped') ? 'neutral' : 'neutral'}`}>
           <div className="feedback-header">
             <CheckCircle size={20} />
-            <strong>Answer submitted</strong>
+            <strong>{feedback?.feedback?.includes('skipped') ? 'Question skipped' : 'Answer submitted'}</strong>
           </div>
-          {feedback.feedback && (
-            <p className="feedback-message">{feedback.feedback}</p>
-          )}
+          <p className="feedback-message">
+            {feedback?.feedback || 'Your answer has been recorded. Continue to the next question.'}
+          </p>
         </div>
       )}
     </div>

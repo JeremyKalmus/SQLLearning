@@ -53,12 +53,12 @@ Deno.serve(async (req: Request) => {
 
     const { userAssessmentId, timeSpentSeconds } = await req.json();
 
-    // Get all responses for this assessment
+    // Get all responses for this assessment with full question data
     const { data: responses, error: responsesError } = await supabase
       .from("assessment_responses")
       .select(`
         *,
-        question:assessment_questions(specific_skills, skill_category, difficulty_weight)
+        question:assessment_questions(id, question_type, question_data, specific_skills, skill_category, difficulty_weight)
       `)
       .eq("user_assessment_id", userAssessmentId);
 
@@ -70,12 +70,96 @@ Deno.serve(async (req: Request) => {
       throw new Error("No responses found for this assessment");
     }
 
+    // Check if there are any write_query questions that need AI evaluation
+    const hasWriteQueryQuestions = responses.some(
+      (r) => r.question?.question_type === "write_query" && r.score === 0
+    );
+
+    // Get API key for AI checking (only needed if there are write_query questions)
+    let apiKeyData: { encrypted_api_key: string } | null = null;
+    if (hasWriteQueryQuestions) {
+      const { data, error: apiKeyError } = await supabase
+        .from("user_api_keys")
+        .select("encrypted_api_key")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (apiKeyError || !data?.encrypted_api_key) {
+        throw new Error("API key not configured. Required for evaluating write_query questions.");
+      }
+      apiKeyData = data;
+    }
+
+    // Evaluate all write_query responses with AI
+    if (hasWriteQueryQuestions && apiKeyData) {
+      for (const response of responses) {
+        if (response.question?.question_type === "write_query" && response.score === 0) {
+          const responseData = response.response_data as any;
+          
+          // Skip if the question was skipped by the user
+          if (responseData?.skipped === true) {
+            continue;
+          }
+          
+          const questionData = response.question.question_data as any;
+          const userQuery = responseData?.query || "";
+
+          if (userQuery.trim()) {
+            try {
+              const checkResult = await checkQueryWithAI(
+                apiKeyData.encrypted_api_key,
+                questionData,
+                userQuery
+              );
+
+              // Update the response with AI evaluation results
+              const { error: updateError } = await supabase
+                .from("assessment_responses")
+                .update({
+                  is_correct: checkResult.isCorrect,
+                  score: checkResult.score,
+                  feedback: checkResult.feedback,
+                })
+                .eq("id", response.id);
+
+              if (updateError) {
+                console.error(`Failed to update response ${response.id}:`, updateError);
+              } else {
+                // Update the response object for score calculation
+                response.is_correct = checkResult.isCorrect;
+                response.score = checkResult.score;
+                response.feedback = checkResult.feedback;
+              }
+            } catch (error) {
+              console.error(`Error evaluating write_query response ${response.id}:`, error);
+              // Continue with other responses even if one fails
+            }
+          }
+        }
+      }
+    }
+
+    // Re-fetch responses to get updated scores
+    const { data: updatedResponses, error: updatedError } = await supabase
+      .from("assessment_responses")
+      .select(`
+        *,
+        question:assessment_questions(specific_skills, skill_category, difficulty_weight)
+      `)
+      .eq("user_assessment_id", userAssessmentId);
+
+    if (updatedError) {
+      throw new Error(`Failed to fetch updated responses: ${updatedError.message}`);
+    }
+
+    const finalResponses = updatedResponses || responses;
+
     // Calculate overall score
-    const totalScore = responses.reduce((sum: number, r: AssessmentResponse) => sum + r.score, 0);
-    const overallScore = Math.round(totalScore / responses.length);
+    const totalScore = finalResponses.reduce((sum: number, r: AssessmentResponse) => sum + r.score, 0);
+    const overallScore = Math.round(totalScore / finalResponses.length);
 
     // Calculate skill scores
-    const skillScores = calculateSkillScores(responses);
+    const skillScores = calculateSkillScores(finalResponses);
 
     // Generate recommendations
     const recommendations = generateRecommendations(skillScores);
@@ -146,8 +230,12 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
+    console.error("Error in complete-assessment:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "Unknown error occurred",
+        details: error.stack 
+      }),
       {
         status: 400,
         headers: {
@@ -238,4 +326,75 @@ function getAvgForCategory(skillScores: SkillScores, skills: string[]): number {
   const scores = skills.map((s) => skillScores[s] || 0).filter((s) => s > 0);
   if (scores.length === 0) return 0;
   return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+}
+
+interface QuestionData {
+  type: string;
+  question: string;
+  correctAnswer?: number;
+  explanation?: string;
+  solutionQuery?: string;
+  description?: string;
+  fixedQuery?: string;
+  errorDescription?: string;
+  blanks?: Array<{
+    position: number;
+    correctAnswer: string;
+    acceptableAnswers?: string[];
+  }>;
+}
+
+async function checkQueryWithAI(
+  apiKey: string,
+  questionData: QuestionData,
+  userQuery: string
+): Promise<{ isCorrect: boolean; score: number; feedback: string }> {
+  const prompt = `Check if this SQL query correctly answers the question.
+
+Question: ${questionData.question}
+Description: ${questionData.description || ""}
+
+Expected Solution:
+${questionData.solutionQuery || ""}
+
+Student's Query:
+${userQuery}
+
+Evaluate:
+1. Is it correct?
+2. Score from 0-100
+3. Feedback
+
+Respond in JSON: {"isCorrect": boolean, "score": number, "feedback": string}`;
+
+  const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!anthropicResponse.ok) {
+    const errorData = await anthropicResponse.json();
+    throw new Error(`Anthropic API error: ${errorData.error?.message || "Unknown error"}`);
+  }
+
+  const anthropicData = await anthropicResponse.json();
+  let content = anthropicData.content[0].text;
+
+  // Extract JSON from code blocks if present
+  if (content.includes("```json")) {
+    content = content.split("```json")[1].split("```")[0].trim();
+  } else if (content.includes("```")) {
+    content = content.split("```")[1].split("```")[0].trim();
+  }
+
+  return JSON.parse(content);
 }
