@@ -1,0 +1,101 @@
+/* Responsive Design */
+
+@media (max-width: 768px) {
+    .container {
+        padding: var(--spacing-sm);
+    }
+
+    .header-container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .mode-selection,
+    .action-cards {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .stats-bar {
+        gap: var(--spacing-md);
+    }
+
+    header,
+    .app-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start;
+    }
+
+    .auth-card {
+        padding: 2rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .editor-actions,
+    .query-actions {
+        flex-direction: column;
+    }
+
+    .feedback-actions {
+        flex-direction: column;
+    }
+
+    .workspace-top,
+    .workspace-grid {
+        gap: var(--spacing-md);
+    }
+
+    .workspace-actions-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .workspace-actions-panel .btn {
+        width: 100%;
+        flex: 1 1 auto;
+    }
+
+    .progress-grid {
+        gap: var(--spacing-md);
+    }
+
+    .flashcard {
+        min-height: 350px;
+        max-height: 80vh;
+    }
+
+    .flashcard-front,
+    .flashcard-back {
+        padding: var(--spacing-xl);
+        min-height: 350px;
+    }
+
+    .options-actions {
+        flex-direction: column;
+    }
+
+    .options-try-again-btn,
+    .options-next-btn {
+        width: 100%;
+    }
+
+    .card-question,
+    .card-answer {
+        font-size: 1.125rem;
+    }
+}

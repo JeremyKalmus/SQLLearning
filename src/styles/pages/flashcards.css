@@ -1,0 +1,334 @@
+/* Flashcards Page Styles */
+
+.flashcards-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+}
+
+.flashcards-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.flashcards-container h1 {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+    color: var(--text-color);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.page-header h2 {
+    color: var(--text-color);
+    font-size: 20px;
+}
+
+.difficulty-selector,
+.level-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: var(--spacing-xl);
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.difficulty-selector label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.difficulty-btn,
+.level-btn {
+    padding: 10px var(--spacing-xl);
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+    color: var(--text-color);
+}
+
+.difficulty-btn:hover:not(:disabled),
+.level-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+}
+
+.difficulty-btn.active,
+.level-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.flashcard-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.card-counter {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.card-progress-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.accuracy-info {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.session-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.session-accuracy {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.completion-notice {
+    padding: 1rem;
+    margin: 1rem 0;
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.completion-notice p {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.navigation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+}
+
+.navigation-buttons .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.multiple-choice-options,
+.options-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--spacing-xl);
+}
+
+.multiple-choice-options .option-btn,
+.option-btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    transition: all var(--transition-fast);
+    color: var(--text-color);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    margin-bottom: var(--spacing-md);
+}
+
+.multiple-choice-options .option-btn:last-child,
+.option-btn:last-child {
+    margin-bottom: 0;
+}
+
+.option-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    background: var(--bg-color);
+    transform: translateX(5px);
+}
+
+.option-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.option-btn.correct-answer,
+.option-btn.correct {
+    background: #064e3b;
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.option-btn.wrong-answer,
+.option-btn.incorrect {
+    background: #7f1d1d;
+    border-color: var(--danger-color);
+    color: white;
+}
+
+.progress-info {
+    background: var(--card-bg);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+    margin-bottom: var(--spacing-xl);
+}
+
+.progress-info h3 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-color);
+}
+
+.level-stats {
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-color);
+    border-radius: var(--radius-lg);
+}
+
+.level-stats h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+.level-stats ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.level-stats li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.level-stats li:last-child {
+    border-bottom: none;
+}
+
+.level-stats strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.options-container {
+    background: var(--card-bg);
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.options-container h3 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-color);
+    text-align: center;
+}
+
+/* Flashcard options inside the card */
+.flashcard-options {
+    margin-top: var(--spacing-xl);
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.options-list .option-btn {
+    margin-bottom: 0;
+    width: 100%;
+    position: relative;
+    padding-right: var(--spacing-2xl);
+}
+
+.option-btn .checkmark,
+.option-btn .crossmark {
+    position: absolute;
+    right: var(--spacing-md);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.option-btn .checkmark {
+    color: var(--secondary-color);
+}
+
+.option-btn .crossmark {
+    color: var(--danger-color);
+}
+
+.option-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.options-loading,
+.options-error {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.options-error {
+    color: var(--danger-color);
+}
+
+.options-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+.options-try-again-btn,
+.options-next-btn {
+    flex: 1;
+}
