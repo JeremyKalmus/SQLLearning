@@ -1366,14 +1366,45 @@ header h1,
 }
 
 .problems-container {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     width: 100%;
+    padding: var(--spacing-lg);
 }
 
 .problems-container h1 {
     margin-bottom: var(--spacing-2xl);
     color: var(--text-color);
+}
+
+/* Grid layout for setup page */
+.problem-setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-2xl);
+    align-items: start;
+}
+
+@media (max-width: 1200px) {
+    .problem-setup-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.problem-setup-card,
+.saved-problems-card {
+    background: var(--card-bg);
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+}
+
+.problem-setup-card h3,
+.saved-problems-card h3 {
+    margin-bottom: var(--spacing-xl);
+    color: var(--text-color);
+    font-size: 20px;
+    text-align: center;
 }
 
 .problem-setup {
@@ -1387,7 +1418,20 @@ header h1,
 }
 
 .setup-options {
-    margin-top: var(--spacing-3xl);
+    margin-top: var(--spacing-lg);
+}
+
+.setup-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .setup-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .saved-problems-section {
@@ -1408,9 +1452,10 @@ header h1,
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-lg);
-    max-height: 500px;
+    max-height: 600px;
     overflow-y: auto;
     padding: 10px;
+    text-align: left;
 }
 
 .saved-problems-list::-webkit-scrollbar {
@@ -3776,9 +3821,9 @@ header h1,
 
 /* Sub-Difficulty Selector */
 .sub-difficulty-options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
     margin-top: var(--spacing-sm);
 }
 
@@ -3805,23 +3850,27 @@ header h1,
 
 .sub-difficulty-option input[type="radio"] {
     margin-top: 2px;
-    margin-right: var(--spacing-md);
+    margin-right: var(--spacing-sm);
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .sub-difficulty-info {
     flex: 1;
+    min-width: 0;
 }
 
 .sub-difficulty-label {
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 4px;
+    font-size: 14px;
 }
 
 .sub-difficulty-description {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-secondary);
+    line-height: 1.3;
 }
 
 /* Saved Problems with Topics */

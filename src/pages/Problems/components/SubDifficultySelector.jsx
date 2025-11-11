@@ -19,7 +19,7 @@ export default function SubDifficultySelector({ difficulty, selectedSubDifficult
 
   return (
     <div className="option-group">
-      <label>Difficulty Level:</label>
+      <label>Difficulty Variation:</label>
       <div className="sub-difficulty-options">
         {options.map(option => (
           <label

@@ -205,42 +205,46 @@ export default function Problems() {
             </div>
           )}
 
-          <div className="problem-setup">
-            <h3>Choose Your Challenge</h3>
-            <div className="setup-options">
-              <div className="option-group">
-                <label>Difficulty Tier:</label>
-                <select value={difficulty} onChange={(e) => handleDifficultyChange(e.target.value)}>
-                  <option value="basic">Basic - SELECT, WHERE, simple filtering</option>
-                  <option value="intermediate">Intermediate - JOINs, GROUP BY, aggregates</option>
-                  <option value="advanced">Advanced - Window functions, CTEs, subqueries</option>
-                  <option value="expert">Expert - Recursive CTEs, complex analytics</option>
-                </select>
+          <div className="problem-setup-grid">
+            <div className="problem-setup-card">
+              <h3>Generate New Problem</h3>
+              <div className="setup-options">
+                <div className="setup-row">
+                  <div className="option-group">
+                    <label>Difficulty Tier:</label>
+                    <select value={difficulty} onChange={(e) => handleDifficultyChange(e.target.value)}>
+                      <option value="basic">Basic - SELECT, WHERE, simple filtering</option>
+                      <option value="intermediate">Intermediate - JOINs, GROUP BY, aggregates</option>
+                      <option value="advanced">Advanced - Window functions, CTEs, subqueries</option>
+                      <option value="expert">Expert - Recursive CTEs, complex analytics</option>
+                    </select>
+                  </div>
+
+                  <TopicFilter
+                    difficulty={difficulty}
+                    selectedTopic={primaryTopic}
+                    onTopicChange={setPrimaryTopic}
+                  />
+                </div>
+
+                <SubDifficultySelector
+                  difficulty={difficulty}
+                  selectedSubDifficulty={subDifficulty}
+                  onSubDifficultyChange={setSubDifficulty}
+                />
+
+                <button
+                  className="btn btn-primary btn-large"
+                  onClick={handleGenerateProblem}
+                  disabled={executing || !hasApiKey}
+                >
+                  {executing ? 'Generating...' : `Generate New Problem${primaryTopic ? ` (${primaryTopic})` : ''}`}
+                </button>
               </div>
-
-              <SubDifficultySelector
-                difficulty={difficulty}
-                selectedSubDifficulty={subDifficulty}
-                onSubDifficultyChange={setSubDifficulty}
-              />
-
-              <TopicFilter
-                difficulty={difficulty}
-                selectedTopic={primaryTopic}
-                onTopicChange={setPrimaryTopic}
-              />
-
-              <button
-                className="btn btn-primary btn-large"
-                onClick={handleGenerateProblem}
-                disabled={executing || !hasApiKey}
-              >
-                {executing ? 'Generating...' : `Generate New Problem${primaryTopic ? ` (${primaryTopic})` : ''}`}
-              </button>
             </div>
 
-            <div className="saved-problems-section">
-              <h4>Saved Problems</h4>
+            <div className="saved-problems-card">
+              <h3>Saved Problems</h3>
               <SavedProblemsList
                 savedProblems={savedProblems}
                 loadingSavedProblems={loadingSavedProblems}
