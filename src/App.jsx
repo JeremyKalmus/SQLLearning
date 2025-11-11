@@ -10,6 +10,9 @@ import Home from './pages/Home';
 import Settings from './pages/Settings';
 import Flashcards from './pages/Flashcards';
 import Problems from './pages/Problems';
+import Assessment from './pages/Assessment';
+import AssessmentTake from './pages/AssessmentTake';
+import AssessmentResults from './pages/AssessmentResults';
 
 function App() {
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false);
@@ -52,6 +55,30 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Problems />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assessment"
+                element={
+                  <ProtectedRoute>
+                    <Assessment />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assessment/take/:userAssessmentId"
+                element={
+                  <ProtectedRoute>
+                    <AssessmentTake />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assessment/results/:userAssessmentId"
+                element={
+                  <ProtectedRoute>
+                    <AssessmentResults />
                   </ProtectedRoute>
                 }
               />
