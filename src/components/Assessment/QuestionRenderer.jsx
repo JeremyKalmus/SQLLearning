@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { sql } from '@codemirror/lang-sql';
+import { sql, SQLDialect } from '@codemirror/lang-sql';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { CheckCircle } from 'lucide-react';
 
 export default function QuestionRenderer({ question, onSubmit, feedback }) {
@@ -42,12 +43,22 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
               <div className="question-code">
                 <CodeMirror
                   value={questionData.code}
-                  extensions={[sql()]}
+                  extensions={[sql({
+                    dialect: SQLDialect.StandardSQL,
+                    upperCaseKeywords: true
+                  })]}
+                  theme={oneDark}
                   editable={false}
                   basicSetup={{
                     lineNumbers: true,
                     highlightActiveLineGutter: false,
                     highlightActiveLine: false,
+                  }}
+                  style={{
+                    fontSize: '14px',
+                    border: '2px solid var(--border-color)',
+                    borderRadius: 'var(--radius-lg)',
+                    overflow: 'hidden',
                   }}
                 />
               </div>
@@ -80,11 +91,33 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
             <div className="code-editor">
               <CodeMirror
                 value={answer?.query || ''}
-                height="200px"
-                extensions={[sql()]}
+                height="300px"
+                extensions={[sql({
+                  dialect: SQLDialect.StandardSQL,
+                  upperCaseKeywords: true
+                })]}
+                theme={oneDark}
                 onChange={(value) => setAnswer({ query: value })}
-                placeholder="Write your SQL query here..."
+                placeholder="-- Write your SQL query here...\nSELECT * FROM table_name;"
                 editable={!submitted}
+                basicSetup={{
+                  lineNumbers: true,
+                  highlightActiveLineGutter: true,
+                  highlightActiveLine: true,
+                  foldGutter: true,
+                  dropCursor: true,
+                  indentOnInput: true,
+                  bracketMatching: true,
+                  closeBrackets: true,
+                  autocompletion: true,
+                  highlightSelectionMatches: true,
+                }}
+                style={{
+                  fontSize: '14px',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+                }}
               />
             </div>
           </div>
@@ -97,12 +130,22 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
             <div className="query-to-read">
               <CodeMirror
                 value={questionData.queryToRead}
-                extensions={[sql()]}
+                extensions={[sql({
+                  dialect: SQLDialect.StandardSQL,
+                  upperCaseKeywords: true
+                })]}
+                theme={oneDark}
                 editable={false}
                 basicSetup={{
                   lineNumbers: true,
                   highlightActiveLineGutter: false,
                   highlightActiveLine: false,
+                }}
+                style={{
+                  fontSize: '14px',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
                 }}
               />
             </div>
@@ -135,12 +178,22 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
               <h3>Broken Query:</h3>
               <CodeMirror
                 value={questionData.brokenQuery}
-                extensions={[sql()]}
+                extensions={[sql({
+                  dialect: SQLDialect.StandardSQL,
+                  upperCaseKeywords: true
+                })]}
+                theme={oneDark}
                 editable={false}
                 basicSetup={{
                   lineNumbers: true,
                   highlightActiveLineGutter: false,
                   highlightActiveLine: false,
+                }}
+                style={{
+                  fontSize: '14px',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
                 }}
               />
             </div>
@@ -148,11 +201,33 @@ export default function QuestionRenderer({ question, onSubmit, feedback }) {
               <h3>Your Fix:</h3>
               <CodeMirror
                 value={answer?.fixedQuery || ''}
-                height="200px"
-                extensions={[sql()]}
+                height="250px"
+                extensions={[sql({
+                  dialect: SQLDialect.StandardSQL,
+                  upperCaseKeywords: true
+                })]}
+                theme={oneDark}
                 onChange={(value) => setAnswer({ fixedQuery: value })}
-                placeholder="Write the corrected query or describe the error..."
+                placeholder="-- Write the corrected query or describe the error..."
                 editable={!submitted}
+                basicSetup={{
+                  lineNumbers: true,
+                  highlightActiveLineGutter: true,
+                  highlightActiveLine: true,
+                  foldGutter: true,
+                  dropCursor: true,
+                  indentOnInput: true,
+                  bracketMatching: true,
+                  closeBrackets: true,
+                  autocompletion: true,
+                  highlightSelectionMatches: true,
+                }}
+                style={{
+                  fontSize: '14px',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+                }}
               />
             </div>
           </div>

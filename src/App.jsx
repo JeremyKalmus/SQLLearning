@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
@@ -14,82 +14,94 @@ import Assessment from './pages/Assessment';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentResults from './pages/AssessmentResults';
 
-function App() {
+function AppContent() {
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false);
+  const location = useLocation();
 
+  // Hide CheatSheet on assessment pages
+  const isAssessmentPage = location.pathname.startsWith('/assessment/take');
+
+  return (
+    <div className="app">
+      <Header onToggleCheatSheet={() => setIsCheatSheetOpen(!isCheatSheetOpen)} />
+      <main className="main-content">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/flashcards"
+            element={
+              <ProtectedRoute>
+                <Flashcards />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/problems"
+            element={
+              <ProtectedRoute>
+                <Problems />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessment"
+            element={
+              <ProtectedRoute>
+                <Assessment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessment/take/:userAssessmentId"
+            element={
+              <ProtectedRoute>
+                <AssessmentTake />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessment/results/:userAssessmentId"
+            element={
+              <ProtectedRoute>
+                <AssessmentResults />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+      {!isAssessmentPage && (
+        <CheatSheetSlider
+          isOpen={isCheatSheetOpen}
+          onClose={() => setIsCheatSheetOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app">
-          <Header onToggleCheatSheet={() => setIsCheatSheetOpen(!isCheatSheetOpen)} />
-          <main className="main-content">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/flashcards"
-                element={
-                  <ProtectedRoute>
-                    <Flashcards />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/problems"
-                element={
-                  <ProtectedRoute>
-                    <Problems />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/assessment"
-                element={
-                  <ProtectedRoute>
-                    <Assessment />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/assessment/take/:userAssessmentId"
-                element={
-                  <ProtectedRoute>
-                    <AssessmentTake />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/assessment/results/:userAssessmentId"
-                element={
-                  <ProtectedRoute>
-                    <AssessmentResults />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </main>
-          <CheatSheetSlider
-            isOpen={isCheatSheetOpen}
-            onClose={() => setIsCheatSheetOpen(false)}
-          />
-        </div>
+        <AppContent />
       </AuthProvider>
     </Router>
   );
