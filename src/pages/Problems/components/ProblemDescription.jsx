@@ -23,7 +23,7 @@ export default function ProblemDescription({ problem }) {
         <h3>{problem.title || 'Untitled Problem'}</h3>
         <div className="problem-metadata">
           <span className={`difficulty-badge difficulty-${problem.difficulty || 'basic'}`}>
-            {problem.sub_difficulty || problem.difficulty || 'basic'}
+            {problem.sub_difficulty || problem.display_difficulty || problem.difficulty || 'basic'}
           </span>
         </div>
       </div>

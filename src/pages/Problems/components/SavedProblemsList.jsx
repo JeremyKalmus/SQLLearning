@@ -16,9 +16,31 @@ export default function SavedProblemsList({
   const filteredAndSortedProblems = useMemo(() => {
     let filtered = [...savedProblems];
 
-    // Filter by difficulty (use top-level difficulty column, not problem.difficulty)
+    // Filter by difficulty (use normalized top-level difficulty column)
     if (difficultyFilter !== 'all') {
-      filtered = filtered.filter(sp => sp.difficulty === difficultyFilter);
+      filtered = filtered.filter(sp => {
+        const difficultyValue = [
+          sp.difficulty,
+          sp.problem?.difficulty,
+          sp.problem_data?.difficulty
+        ]
+          .find((value) => typeof value === 'string' && value.trim().length > 0);
+
+        if (!difficultyValue) return false;
+
+        const normalized = difficultyValue.trim().toLowerCase();
+
+        if (normalized === difficultyFilter) return true;
+        if (normalized.startsWith(`${difficultyFilter}-`)) return true;
+        if (normalized.startsWith(`${difficultyFilter}+`)) return true;
+
+        // Handle cases like "intermediate level" or "Intermediate problem"
+        if (normalized.includes(' ')) {
+          return normalized.split(' ')[0] === difficultyFilter;
+        }
+
+        return false;
+      });
     }
 
     // Filter by status (solved vs unsolved)
@@ -115,61 +137,79 @@ export default function SavedProblemsList({
       ) : (
         <div className="saved-problems-list">
           {filteredAndSortedProblems.map((sp) => {
-        const p = sp.problem;
-        const createdDate = new Date(sp.created_at).toLocaleDateString();
-        const bestScore = sp.best_score !== null ? sp.best_score : null;
-        const attempts = sp.attempts || 0;
-        const solved = sp.solved || false;
+            const {
+              id,
+              problem: p,
+              best_score: bestScore,
+              attempts,
+              solved,
+              created_at: createdAt,
+              difficulty_label: difficultyLabel,
+              sub_difficulty: subDifficulty,
+              primary_topic: primaryTopic
+            } = sp;
 
-        return (
-          <div
-            key={sp.id}
-            className="saved-problem-card"
-            onClick={() => onLoadProblem(sp.id)}
-          >
-            <div className="saved-problem-header">
-              <h5>{p?.title || 'Untitled Problem'}</h5>
-              <button
-                className="btn-icon-small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteProblem(sp.id);
-                }}
-                title="Delete"
+            const displayTitle = p?.title || 'Untitled Problem';
+            const createdDate = new Date(createdAt).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+            const normalizedDifficulty = (p?.difficulty || sp.difficulty || 'basic').toLowerCase();
+            const difficultyText = subDifficulty || p?.display_difficulty || difficultyLabel || (p?.difficulty
+              ? p.difficulty.charAt(0).toUpperCase() + p.difficulty.slice(1)
+              : 'Basic');
+            const topicToShow = primaryTopic || p?.primary_topic || p?.topic || null;
+            const attemptsCount = attempts || 0;
+            const isSolved = solved || false;
+            const scoreValue = bestScore !== null && bestScore !== undefined ? bestScore : null;
+
+            return (
+              <div
+                key={id}
+                className="saved-problem-card"
+                onClick={() => onLoadProblem(id)}
               >
-                <Trash2 size={16} />
-              </button>
-            </div>
-            <div className="saved-problem-meta">
-              <div className="saved-problem-meta-left">
-                <span className={`difficulty-badge difficulty-${(p?.difficulty || 'basic').toLowerCase()}`}>
-                  {p?.sub_difficulty || p?.difficulty || 'basic'}
-                </span>
-                {p?.primary_topic && (
-                  <span className="topic-badge">{p.primary_topic}</span>
-                )}
-                {!p?.primary_topic && p?.topic && (
-                  <span className="saved-problem-topic">{p.topic}</span>
-                )}
-              </div>
-              <div className="saved-problem-meta-right">
-                {bestScore !== null && (
-                  <div className="saved-problem-score">
-                    <span className={`score-badge ${solved ? 'score-solved' : 'score-attempted'}`}>
-                      {solved ? <CheckCircle size={12} /> : <Target size={12} />}
-                      Best: {bestScore}/100
+                <div className="saved-problem-header">
+                  <h5>{displayTitle}</h5>
+                  <button
+                    className="btn-icon-small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteProblem(id);
+                    }}
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div className="saved-problem-meta">
+                  <div className="saved-problem-meta-left">
+                    <span className={`difficulty-badge difficulty-${normalizedDifficulty}`}>
+                      {difficultyText}
                     </span>
-                    {attempts > 1 && (
-                      <span className="attempts-badge">{attempts} attempts</span>
+                    {topicToShow && (
+                      <span className="topic-badge">{topicToShow}</span>
                     )}
                   </div>
-                )}
-                <span className="saved-problem-date">{createdDate}</span>
+                  <div className="saved-problem-meta-right">
+                    {scoreValue !== null && (
+                      <div className="saved-problem-score">
+                        <span className={`score-badge ${isSolved ? 'score-solved' : 'score-attempted'}`}>
+                          {isSolved ? <CheckCircle size={12} /> : <Target size={12} />}
+                          Best: {scoreValue}/100
+                        </span>
+                        {attemptsCount > 1 && (
+                          <span className="attempts-badge">{attemptsCount} attempts</span>
+                        )}
+                      </div>
+                    )}
+                    <span className="saved-problem-date">{createdDate}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
         </div>
       )}
     </div>

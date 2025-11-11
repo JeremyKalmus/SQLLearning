@@ -75,8 +75,24 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
       // Generate a unique problem ID based on title (normalized)
       const problemId = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-      // Add the ID to the problem data
-      const problemWithId = { ...data, id: problemId };
+      const rawDifficulty = data.difficulty || difficulty || 'basic';
+      const normalizedDifficulty = typeof rawDifficulty === 'string'
+        ? rawDifficulty.trim().toLowerCase()
+        : 'basic';
+      const subDifficultyValue = data.sub_difficulty || subDifficulty || null;
+      const primaryTopicValue = data.primary_topic || null;
+
+      // Add the ID and normalized fields to the problem data
+      const problemWithId = {
+        ...data,
+        id: problemId,
+        difficulty: normalizedDifficulty,
+        sub_difficulty: subDifficultyValue,
+        primary_topic: primaryTopicValue,
+        display_difficulty: subDifficultyValue || (typeof rawDifficulty === 'string'
+          ? rawDifficulty.trim()
+          : 'Basic')
+      };
 
       if (!isDuplicate) {
         // Save the problem
@@ -86,9 +102,9 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
             user_id: user.id,
             problem_id: problemId,
             problem_data: problemWithId,
-            difficulty: difficulty,
-            sub_difficulty: data.sub_difficulty || subDifficulty,
-            primary_topic: data.primary_topic,
+            difficulty: normalizedDifficulty,
+            sub_difficulty: subDifficultyValue,
+            primary_topic: primaryTopicValue,
             secondary_topics: data.concept_tags || [],
             concept_tags: data.concept_tags || []
           });
