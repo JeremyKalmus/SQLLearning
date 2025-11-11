@@ -16,9 +16,9 @@ export default function SavedProblemsList({
   const filteredAndSortedProblems = useMemo(() => {
     let filtered = [...savedProblems];
 
-    // Filter by difficulty
+    // Filter by difficulty (use top-level difficulty column, not problem.difficulty)
     if (difficultyFilter !== 'all') {
-      filtered = filtered.filter(sp => sp.problem?.difficulty === difficultyFilter);
+      filtered = filtered.filter(sp => sp.difficulty === difficultyFilter);
     }
 
     // Filter by status (solved vs unsolved)
