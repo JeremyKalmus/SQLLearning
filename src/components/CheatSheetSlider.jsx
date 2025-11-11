@@ -627,9 +627,80 @@ LEFT JOIN repeat_purchase rp ON fp.customer_id = rp.customer_id;`}</pre>
     }
   ];
 
+  // Helper function to extract text content from React elements
+  const extractTextFromContent = (content) => {
+    if (!content) return '';
+    
+    // Handle strings directly
+    if (typeof content === 'string') {
+      return content;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(content)) {
+      return content.map(extractTextFromContent).join(' ');
+    }
+    
+    // Handle React elements
+    if (content && typeof content === 'object') {
+      // Handle React elements with props.children
+      if (content.props) {
+        if (content.props.children) {
+          return extractTextFromContent(content.props.children);
+        }
+        // Handle self-closing elements or elements with no children
+        return '';
+      }
+      
+      // Handle React.Fragment or other special cases
+      if (content.type && content.props && content.props.children) {
+        return extractTextFromContent(content.props.children);
+      }
+    }
+    
+    return '';
+  };
+
+  // Helper function to check if section matches search term
+  const sectionMatchesSearch = (section, searchTerm) => {
+    const trimmedTerm = searchTerm.trim();
+    if (!trimmedTerm) return true;
+    
+    const lowerSearchTerm = trimmedTerm.toLowerCase();
+    const lowerTitle = section.title.toLowerCase();
+    
+    // Check title (exact match gets priority)
+    if (lowerTitle === lowerSearchTerm) {
+      return true;
+    }
+    if (lowerTitle.includes(lowerSearchTerm)) {
+      return true;
+    }
+    
+    // Extract and check content text
+    const contentText = extractTextFromContent(section.content);
+    const lowerContentText = contentText.toLowerCase();
+    
+    // Check for exact phrase match
+    if (lowerContentText.includes(lowerSearchTerm)) {
+      return true;
+    }
+    
+    // Check for individual word matches (if multiple words)
+    const searchWords = lowerSearchTerm.split(/\s+/).filter(word => word.length > 0);
+    if (searchWords.length > 1) {
+      // All words must be present
+      return searchWords.every(word => 
+        lowerContentText.includes(word) || lowerTitle.includes(word)
+      );
+    }
+    
+    return false;
+  };
+
   const filteredSections = searchTerm
     ? cheatSheetSections.filter(section =>
-        section.title.toLowerCase().includes(searchTerm.toLowerCase())
+        sectionMatchesSearch(section, searchTerm)
       )
     : cheatSheetSections;
 
