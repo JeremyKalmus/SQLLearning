@@ -37,48 +37,81 @@ Deno.serve(async (req: Request) => {
       throw new Error("Query is required");
     }
 
-    // Strip trailing semicolons to avoid SQL errors
-    query = query.trim().replace(/;+$/, '');
-
     /**
      * Strip SQL comments from query for validation purposes
-     * Handles both single-line (--) and multi-line (/* */) comments
+     * Handles both single-line (--) and multi-line comments
      */
     function stripComments(sql: string): string {
+      if (!sql) return '';
+      
       let result = sql;
       
       // Remove multi-line comments /* ... */
       result = result.replace(/\/\*[\s\S]*?\*\//g, ' ');
       
-      // Remove single-line comments -- ... (but not inside strings)
-      // Simple approach: replace -- to end of line, but be careful of -- in strings
-      // For validation purposes, this simple approach is sufficient
-      result = result.replace(/--[^\r\n]*/g, ' ');
+      // Remove single-line comments -- ... (matches -- to end of line or end of string)
+      // Handle both \n and \r\n line endings
+      result = result.replace(/--[^\r\n]*(\r?\n|$)/g, ' ');
       
-      // Clean up extra whitespace
+      // Clean up extra whitespace (including newlines, tabs, etc.)
       result = result.replace(/\s+/g, ' ').trim();
       
       return result;
     }
 
-    // Strip comments for validation (but keep original query for execution)
-    const queryForValidation = stripComments(query);
-    const upperQuery = queryForValidation.toUpperCase();
-    
-    const dangerousKeywords = [
-      "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE",
-      "TRUNCATE", "GRANT", "REVOKE", "EXEC", "EXECUTE"
-    ];
+    /**
+     * Split queries by semicolon and validate each one
+     */
+    function validateMultipleQueries(sql: string): void {
+      // Split original query by semicolon first (before stripping comments)
+      const originalQueries = sql.split(';').map(q => q.trim()).filter(q => q.length > 0);
+      
+      if (originalQueries.length === 0) {
+        throw new Error("No valid queries found");
+      }
+      
+      const dangerousKeywords = [
+        "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE",
+        "TRUNCATE", "GRANT", "REVOKE", "EXEC", "EXECUTE"
+      ];
 
-    for (const keyword of dangerousKeywords) {
-      if (upperQuery.includes(keyword)) {
-        throw new Error(`Dangerous keyword detected: ${keyword}. Only SELECT and WITH (CTEs) are allowed.`);
+      // Validate each query (strip comments for validation but check original)
+      let hasValidQuery = false;
+      for (const originalQuery of originalQueries) {
+        // Strip comments for validation
+        const queryForValidation = stripComments(originalQuery);
+        
+        // Skip if query is empty after stripping comments (might be just comments)
+        if (!queryForValidation || queryForValidation.trim().length === 0) {
+          continue; // Allow queries that are just comments
+        }
+        
+        hasValidQuery = true;
+        const upperQuery = queryForValidation.toUpperCase().trim();
+        
+        // Check for dangerous keywords
+        for (const keyword of dangerousKeywords) {
+          if (upperQuery.includes(keyword)) {
+            throw new Error(`Dangerous keyword detected: ${keyword}. Only SELECT and WITH (CTEs) are allowed.`);
+          }
+        }
+
+        // Check that query starts with SELECT or WITH (after comment stripping)
+        if (!upperQuery.startsWith("SELECT") && !upperQuery.startsWith("WITH")) {
+          throw new Error(`Only SELECT and WITH (CTE) queries are allowed. Found: ${queryForValidation.substring(0, 50)}`);
+        }
+      }
+      
+      // Ensure at least one valid query exists
+      if (!hasValidQuery) {
+        throw new Error("No valid queries found after removing comments");
       }
     }
 
-    if (!upperQuery.startsWith("SELECT") && !upperQuery.startsWith("WITH")) {
-      throw new Error("Only SELECT and WITH (CTE) queries are allowed");
-    }
+    // Validate all queries (with comments stripped)
+    validateMultipleQueries(query);
+    
+    // Keep original query for execution (database function will handle multiple queries)
 
     const { data, error } = await supabase.rpc("execute_readonly_query", {
       sql_query: query,
@@ -99,35 +132,120 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Handle new format with column_order, or legacy format (array of rows)
-    let rows, columnOrder;
-    if (result && typeof result === 'object' && 'rows' in result) {
-      rows = result.rows || [];
-      columnOrder = result.column_order || null;
-    } else {
-      // Legacy format - just an array
-      rows = Array.isArray(result) ? result : [];
-      columnOrder = null;
-    }
+    // Check if result is an array (multiple queries) or single result
+    if (Array.isArray(result) && result.length > 0 && result[0].queryIndex !== undefined) {
+      // Multiple queries - normalize each result block before returning
+      const normalizedResults = result.map((r: any) => {
+        let rows = r.rows ?? [];
+        if (typeof rows === "string") {
+          try {
+            rows = JSON.parse(rows);
+          } catch (_) {
+            rows = [];
+          }
+        }
+        if (!Array.isArray(rows)) {
+          rows = [];
+        }
 
-    return new Response(
-      JSON.stringify({ 
-        rows: rows || [], 
-        rowCount: Array.isArray(rows) ? rows.length : 0,
-        column_order: columnOrder
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        let columnOrder = r.column_order ?? null;
+        if (typeof columnOrder === "string") {
+          try {
+            columnOrder = JSON.parse(columnOrder);
+          } catch (_) {
+            columnOrder = null;
+          }
+        }
+        if (!Array.isArray(columnOrder) || columnOrder.length === 0) {
+          columnOrder = rows.length > 0 ? Object.keys(rows[0]) : [];
+        }
+
+        const rowCount = Array.isArray(rows) ? rows.length : 0;
+
+        return {
+          queryIndex: r.queryIndex,
+          query: r.query,
+          rows,
+          rowCount,
+          column_order: columnOrder,
+          error: r.error ?? null,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          multiple: true,
+          results: normalizedResults,
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } else {
+      // Single query result (legacy format or single query)
+      let rows;
+      if (result && typeof result === 'object' && 'rows' in result) {
+        rows = result.rows ?? [];
+      } else {
+        rows = Array.isArray(result) ? result : [];
       }
-    );
+
+      if (typeof rows === 'string') {
+        try {
+          rows = JSON.parse(rows);
+        } catch (_) {
+          rows = [];
+        }
+      }
+
+      if (!Array.isArray(rows)) {
+        rows = [];
+      }
+
+      let columnOrder = null;
+      if (result && typeof result === 'object' && 'column_order' in result) {
+        columnOrder = result.column_order;
+        if (typeof columnOrder === 'string') {
+          try {
+            columnOrder = JSON.parse(columnOrder);
+          } catch (_) {
+            columnOrder = null;
+          }
+        }
+      }
+
+      if (!Array.isArray(columnOrder) || columnOrder.length === 0) {
+        columnOrder = rows.length > 0 ? Object.keys(rows[0]) : [];
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          multiple: false,
+          rows,
+          rowCount: rows.length,
+          column_order: columnOrder
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
   } catch (error: any) {
     console.error('Execute query error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     const errorMessage = error.message || error.error || 'Failed to execute query';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.stack || error.toString()
+      }),
       {
         status: 400,
         headers: {

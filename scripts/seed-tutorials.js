@@ -5,16 +5,20 @@
  * Usage: node scripts/seed-tutorials.js
  */
 
-import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { Client } = pg;
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-const client = new Client({
-  connectionString: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
-});
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Error: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in .env file');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ============================================================================
 // BASIC TUTORIALS (5)
@@ -2496,8 +2500,8 @@ ORDER BY o.order_date DESC;`,
 
 async function seedTutorials() {
   try {
-    await client.connect();
-    console.log('Connected to database');
+    console.log('Connecting to Supabase...');
+    console.log(`URL: ${supabaseUrl}`);
 
     // All tutorials in order
     const tutorials = [
@@ -2529,36 +2533,35 @@ async function seedTutorials() {
     console.log(`\nSeeding ${tutorials.length} tutorials...\n`);
 
     for (const tutorial of tutorials) {
-      const { rows } = await client.query(
-        `INSERT INTO tutorials (
-          slug, title, description, difficulty_tier, topic,
-          prerequisites, order_index, content, estimated_time_minutes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT (slug) DO UPDATE SET
-          title = EXCLUDED.title,
-          description = EXCLUDED.description,
-          difficulty_tier = EXCLUDED.difficulty_tier,
-          topic = EXCLUDED.topic,
-          prerequisites = EXCLUDED.prerequisites,
-          order_index = EXCLUDED.order_index,
-          content = EXCLUDED.content,
-          estimated_time_minutes = EXCLUDED.estimated_time_minutes,
-          updated_at = NOW()
-        RETURNING id`,
-        [
-          tutorial.slug,
-          tutorial.title,
-          tutorial.description,
-          tutorial.difficulty_tier,
-          tutorial.topic,
-          tutorial.prerequisites,
-          tutorial.order_index,
-          JSON.stringify(tutorial.content),
-          tutorial.estimated_time_minutes
-        ]
-      );
+      // Prepare the tutorial data for Supabase
+      const tutorialData = {
+        slug: tutorial.slug,
+        title: tutorial.title,
+        description: tutorial.description,
+        difficulty_tier: tutorial.difficulty_tier,
+        topic: tutorial.topic,
+        prerequisites: tutorial.prerequisites || [],
+        order_index: tutorial.order_index,
+        content: tutorial.content, // Supabase handles JSONB automatically
+        estimated_time_minutes: tutorial.estimated_time_minutes
+      };
 
-      console.log(`✓ Seeded: [${tutorial.difficulty_tier.toUpperCase().padEnd(12)}] ${tutorial.title} (ID: ${rows[0].id})`);
+      // Use upsert to handle duplicates (ON CONFLICT)
+      const { data, error } = await supabase
+        .from('tutorials')
+        .upsert(tutorialData, {
+          onConflict: 'slug',
+          ignoreDuplicates: false
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error(`✗ Error seeding ${tutorial.slug}:`, error.message);
+        throw error;
+      }
+
+      console.log(`✓ Seeded: [${tutorial.difficulty_tier.toUpperCase().padEnd(12)}] ${tutorial.title} (ID: ${data.id})`);
     }
 
     console.log('\n✅ Successfully seeded all tutorials!');
@@ -2571,8 +2574,6 @@ async function seedTutorials() {
   } catch (error) {
     console.error('Error seeding tutorials:', error);
     process.exit(1);
-  } finally {
-    await client.end();
   }
 }
 

@@ -5,14 +5,15 @@ import PropTypes from 'prop-types';
 
 export default function TutorialCard({ tutorial, userProgress }) {
   const status = userProgress?.status || 'not_started';
+  const isCompleted = status === 'completed';
 
   return (
     <Link
       to={`/learn/${tutorial.slug}`}
-      className="action-card"
+      className={`action-card ${isCompleted ? 'tutorial-completed' : ''}`}
     >
       <div className="action-icon">
-        {status === 'completed' ? (
+        {isCompleted ? (
           <CheckCircle className="text-green-500" size={36} />
         ) : (
           <GraduationCap size={36} />

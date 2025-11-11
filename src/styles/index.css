@@ -505,6 +505,17 @@ header h1,
     margin-bottom: var(--spacing-md);
 }
 
+/* Completed tutorial card styling */
+.action-card.tutorial-completed {
+    border: 2px solid #10b981;
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(16, 185, 129, 0.1) 100%);
+}
+
+.action-card.tutorial-completed:hover {
+    border-color: #059669;
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(16, 185, 129, 0.15) 100%);
+}
+
 .mode-card ul {
     list-style: none;
     margin: var(--spacing-lg) 0;
