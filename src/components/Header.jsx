@@ -91,6 +91,24 @@ export default function Header({ onToggleCheatSheet }) {
           <GraduationCap size={20} />
           <span>Quiz</span>
         </Link>
+        <div className="nav-item user-nav-item">
+          <button
+            className="user-nav-button"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            aria-label="User menu"
+          >
+            <User size={20} />
+            <span>Menu</span>
+          </button>
+          {dropdownOpen && (
+            <div className="mobile-dropdown-menu">
+              <Link to="/settings" onClick={() => setDropdownOpen(false)}>
+                Settings
+              </Link>
+              <button onClick={handleSignOut}>Sign Out</button>
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Floating CheatSheet Button - Mobile Only */}

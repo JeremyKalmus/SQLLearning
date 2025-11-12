@@ -213,16 +213,18 @@ header h1,
 /* Mobile Styles */
 @media (max-width: 768px) {
     .app-header {
-        padding: var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-md);
     }
 
     .header-container {
         position: relative;
+        justify-content: flex-end; /* Push logo to the right */
     }
 
-    /* Logo adjustments */
+    /* Logo adjustments - move to right */
     .logo {
-        font-size: 1.1rem;
+        font-size: 1rem;
+        margin-left: auto; /* Push to right */
     }
 
     .logo-text {
@@ -234,17 +236,9 @@ header h1,
         display: none;
     }
 
-    /* User menu on mobile */
+    /* Hide user menu on mobile - moved to bottom nav */
     .user-menu {
-        margin-left: auto;
-    }
-
-    .user-email {
-        display: none; /* Hide email on mobile */
-    }
-
-    .dropdown-arrow {
-        display: none; /* Hide arrow on mobile */
+        display: none;
     }
 
     /* Show Mobile Bottom Navigation */
@@ -301,6 +295,89 @@ header h1,
     .mobile-bottom-nav .nav-item span {
         white-space: nowrap;
         font-size: 0.7rem;
+    }
+
+    /* User nav item in bottom nav */
+    .mobile-bottom-nav .user-nav-item {
+        position: relative;
+        padding: 0;
+    }
+
+    .mobile-bottom-nav .user-nav-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        font-weight: 500;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        min-width: 56px;
+        min-height: 56px;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+    }
+
+    .mobile-bottom-nav .user-nav-button:hover,
+    .mobile-bottom-nav .user-nav-button:active {
+        color: var(--primary-color);
+        background: var(--bg-color);
+    }
+
+    .mobile-bottom-nav .user-nav-button span {
+        font-size: 0.7rem;
+    }
+
+    /* Mobile dropdown menu from bottom nav */
+    .mobile-dropdown-menu {
+        position: fixed;
+        bottom: 70px; /* Above bottom nav */
+        right: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        min-width: 160px;
+        padding: var(--spacing-xs);
+        z-index: 1001;
+        animation: slideUpFade 0.2s ease-out;
+    }
+
+    @keyframes slideUpFade {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .mobile-dropdown-menu a,
+    .mobile-dropdown-menu button {
+        display: block;
+        width: 100%;
+        padding: var(--spacing-md);
+        text-align: left;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        transition: background var(--transition-fast);
+        font-size: 0.875rem;
+        min-height: 44px;
+    }
+
+    .mobile-dropdown-menu a:hover,
+    .mobile-dropdown-menu button:hover {
+        background: var(--bg-color);
     }
 
     /* Adjust main content to account for bottom nav */
