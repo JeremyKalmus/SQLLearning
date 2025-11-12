@@ -101,12 +101,7 @@ export function useProblemGeneration(onProblemGenerated, onSavedProblemsReload) 
           .insert({
             user_id: user.id,
             problem_id: problemId,
-            problem_data: problemWithId,
-            difficulty: normalizedDifficulty,
-            sub_difficulty: subDifficultyValue,
-            primary_topic: primaryTopicValue,
-            secondary_topics: data.concept_tags || [],
-            concept_tags: data.concept_tags || []
+            problem_data: problemWithId
           });
 
         if (saveError) {
