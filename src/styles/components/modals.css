@@ -83,3 +83,74 @@
 .modal-table-content {
     width: 100%;
 }
+
+/* ===== MOBILE MODAL STYLES ===== */
+@media (max-width: 768px) {
+    .modal,
+    .modal-overlay {
+        padding: 0; /* Remove padding for full-screen */
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    .modal-content {
+        max-width: 100vw;
+        max-height: 100vh;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0; /* No rounded corners on mobile */
+        animation: slideUpMobile 0.3s ease-out;
+    }
+
+    @keyframes slideUpMobile {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+        padding: var(--spacing-lg);
+        min-height: 56px; /* Touch-friendly header */
+    }
+
+    .modal-header h3 {
+        font-size: 1.125rem;
+    }
+
+    .modal-body {
+        height: calc(100vh - 56px);
+        padding: var(--spacing-md);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    /* Close button - larger on mobile */
+    .modal-header button,
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
+    }
+
+    /* Modal footer if present */
+    .modal-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        padding: var(--spacing-md);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-footer .btn {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}

@@ -391,6 +391,74 @@
     .workspace-query-panel {
         height: auto;
     }
+
+    /* ===== MOBILE WORKSPACE OPTIMIZATION ===== */
+    /* Stack all panels vertically with touch-friendly headers */
+
+    .problem-workspace {
+        min-height: auto;
+        gap: var(--spacing-md);
+    }
+
+    /* Problem Description - Always visible, scrollable */
+    .problem-description {
+        max-height: 40vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Schema Panel - Collapsible */
+    .workspace-schema-panel {
+        max-height: 50vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Query Editor Panel - Primary focus on mobile */
+    .workspace-query-panel {
+        order: -1; /* Move to top on mobile */
+        min-height: 300px;
+    }
+
+    /* Query Results - Scrollable */
+    .query-results {
+        max-height: 40vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Notes Panel - Smaller on mobile */
+    .workspace-notes-panel {
+        min-height: 150px;
+        max-height: 30vh;
+    }
+
+    .workspace-notes-panel textarea {
+        font-size: 14px;
+        min-height: 120px;
+    }
+
+    /* Action Buttons - Stack vertically */
+    .workspace-primary-actions {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .workspace-primary-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Editor Actions - Full width */
+    .query-editor-actions {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .query-editor-actions .btn {
+        width: 100%;
+        min-height: 48px;
+    }
 }
 
 .problem-header {
