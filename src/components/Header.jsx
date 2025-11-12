@@ -87,15 +87,21 @@ export default function Header({ onToggleCheatSheet }) {
           <BookOpen size={20} />
           <span>Cards</span>
         </Link>
-        <button
-          className={`nav-item nav-button`}
-          onClick={onToggleCheatSheet}
-          title="View SQL Cheat Sheet"
-        >
-          <FileText size={20} />
-          <span>Sheet</span>
-        </button>
+        <Link to="/assessment" className={`nav-item ${isActive('/assessment') ? 'active' : ''}`}>
+          <GraduationCap size={20} />
+          <span>Quiz</span>
+        </Link>
       </nav>
+
+      {/* Floating CheatSheet Button - Mobile Only */}
+      <button
+        className="cheatsheet-fab"
+        onClick={onToggleCheatSheet}
+        title="View SQL Cheat Sheet"
+        aria-label="Open SQL Cheat Sheet"
+      >
+        <FileText size={24} />
+      </button>
     </>
   );
 }
