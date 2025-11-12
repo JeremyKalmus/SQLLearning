@@ -1,8 +1,27 @@
 /* Responsive Design */
 
 @media (max-width: 768px) {
+    /* Reduce padding to maximize screen space */
     .container {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        max-width: 100%;
+    }
+
+    .problems-container,
+    .home-container,
+    .flashcards-container,
+    .assessment-container {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        max-width: 100%;
+    }
+
+    /* Pages take full width */
+    .problems-page,
+    .home-page,
+    .flashcards-page,
+    .assessment-page {
+        padding: 0;
+        margin: 0;
     }
 
     .header-container {

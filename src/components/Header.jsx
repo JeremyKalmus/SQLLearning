@@ -1,97 +1,102 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
-import { Book, FileText, Menu, X } from 'lucide-react';
+import { Book, FileText, Home, GraduationCap, Code, BookOpen, User } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 export default function Header({ onToggleCheatSheet }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
   };
 
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-  };
-
-  const handleNavClick = () => {
-    closeMobileMenu();
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   if (!user) return null;
 
   return (
-    <header className="app-header">
-      <div className="header-container">
-        <Link to="/" className="logo">
-          <Book className="logo-icon" size={24} />
-          <span className="logo-text">SQL Learning Game</span>
-        </Link>
+    <>
+      <header className="app-header">
+        <div className="header-container">
+          <Link to="/" className="logo">
+            <Book className="logo-icon" size={24} />
+            <span className="logo-text">SQL Learning Game</span>
+          </Link>
 
-        {/* Hamburger Menu Button - Mobile Only */}
-        <button
-          className="mobile-menu-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          {/* Desktop Navigation - Hidden on Mobile */}
+          <nav className="nav-links desktop-nav">
+            <Link to="/">Dashboard</Link>
+            <Link to="/learn">Learn</Link>
+            <Link to="/problems">Problems</Link>
+            <Link to="/flashcards">Flashcards</Link>
+            <Link to="/assessment">Assessment</Link>
+            <button
+              className="cheatsheet-btn"
+              onClick={onToggleCheatSheet}
+              title="View SQL Cheat Sheet"
+            >
+              <FileText size={18} />
+              <span>Cheat Sheet</span>
+            </button>
+          </nav>
 
-        <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-          <Link to="/" onClick={handleNavClick}>Dashboard</Link>
-          <Link to="/learn" onClick={handleNavClick}>Learn</Link>
-          <Link to="/problems" onClick={handleNavClick}>Problems</Link>
-          <Link to="/flashcards" onClick={handleNavClick}>Flashcards</Link>
-          <Link to="/assessment" onClick={handleNavClick}>Assessment</Link>
-          <button
-            className="cheatsheet-btn"
-            onClick={() => {
-              onToggleCheatSheet();
-              closeMobileMenu();
-            }}
-            title="View SQL Cheat Sheet"
-          >
-            <FileText size={18} />
-            <span>Cheat Sheet</span>
-          </button>
-        </nav>
+          <div className="user-menu">
+            <button
+              className="user-button"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <span className="user-avatar">{user.email[0].toUpperCase()}</span>
+              <span className="user-email">{user.email}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
 
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div
-            className="mobile-menu-overlay"
-            onClick={closeMobileMenu}
-            aria-hidden="true"
-          />
-        )}
-
-        <div className="user-menu">
-          <button
-            className="user-button"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
-            <span className="user-avatar">{user.email[0].toUpperCase()}</span>
-            <span className="user-email">{user.email}</span>
-            <span className="dropdown-arrow">▼</span>
-          </button>
-
-          {dropdownOpen && (
-            <div className="dropdown-menu">
-              <Link to="/settings" onClick={() => setDropdownOpen(false)}>
-                Settings
-              </Link>
-              <button onClick={handleSignOut}>Sign Out</button>
-            </div>
-          )}
+            {dropdownOpen && (
+              <div className="dropdown-menu">
+                <Link to="/settings" onClick={() => setDropdownOpen(false)}>
+                  Settings
+                </Link>
+                <button onClick={handleSignOut}>Sign Out</button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Mobile Bottom Navigation - Visible Only on Mobile */}
+      <nav className="mobile-bottom-nav">
+        <Link to="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>
+          <Home size={20} />
+          <span>Home</span>
+        </Link>
+        <Link to="/learn" className={`nav-item ${isActive('/learn') ? 'active' : ''}`}>
+          <GraduationCap size={20} />
+          <span>Learn</span>
+        </Link>
+        <Link to="/problems" className={`nav-item ${isActive('/problems') ? 'active' : ''}`}>
+          <Code size={20} />
+          <span>Problems</span>
+        </Link>
+        <Link to="/flashcards" className={`nav-item ${isActive('/flashcards') ? 'active' : ''}`}>
+          <BookOpen size={20} />
+          <span>Cards</span>
+        </Link>
+        <button
+          className={`nav-item nav-button`}
+          onClick={onToggleCheatSheet}
+          title="View SQL Cheat Sheet"
+        >
+          <FileText size={20} />
+          <span>Sheet</span>
+        </button>
+      </nav>
+    </>
   );
 }
 
