@@ -49,18 +49,12 @@ export function useProgressAutoSave(problem, query, notes, debounceMs = 2000) {
         savedProblemIdRef.current = existing.id;
       } else {
         // Create new saved problem
-        const normalizedDifficulty = typeof problem?.difficulty === 'string'
-          ? problem.difficulty.trim().toLowerCase()
-          : 'basic';
         const { data: newSaved, error: insertError } = await supabase
           .from('saved_problems')
           .insert({
             user_id: user.id,
             problem_id: problemId,
             problem_data: problem,
-            difficulty: normalizedDifficulty,
-            sub_difficulty: problem?.sub_difficulty || null,
-            primary_topic: problem?.primary_topic || null,
             current_query: query,
             current_notes: notes,
             last_accessed: new Date().toISOString()

@@ -76,7 +76,7 @@ export function useAnswerChecking() {
       }
 
       // Reload saved problems to update scores
-      if (view === 'setup' && onSavedProblemsReload) {
+      if (onSavedProblemsReload) {
         onSavedProblemsReload();
       }
     } catch (error) {
