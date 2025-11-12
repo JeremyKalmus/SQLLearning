@@ -1,0 +1,156 @@
+/* Modal Component */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    max-width: 90%;
+    max-height: 90vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 18px;
+}
+
+.modal-body {
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-loading {
+    text-align: center;
+    padding: var(--spacing-4xl);
+    color: var(--text-secondary);
+}
+
+.modal-error {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--danger-color);
+}
+
+.modal-error p {
+    margin: 0;
+}
+
+.modal-table-content {
+    width: 100%;
+}
+
+/* ===== MOBILE MODAL STYLES ===== */
+@media (max-width: 768px) {
+    .modal,
+    .modal-overlay {
+        padding: 0; /* Remove padding for full-screen */
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    .modal-content {
+        max-width: 100vw;
+        max-height: 100vh;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0; /* No rounded corners on mobile */
+        animation: slideUpMobile 0.3s ease-out;
+    }
+
+    @keyframes slideUpMobile {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+        padding: var(--spacing-lg);
+        min-height: 56px; /* Touch-friendly header */
+    }
+
+    .modal-header h3 {
+        font-size: 1.125rem;
+    }
+
+    .modal-body {
+        height: calc(100vh - 56px);
+        padding: var(--spacing-md);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    /* Close button - larger on mobile */
+    .modal-header button,
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
+    }
+
+    /* Modal footer if present */
+    .modal-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        padding: var(--spacing-md);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-footer .btn {
+        min-height: 48px;
+        font-size: 16px;
+    }
+}

@@ -1,0 +1,125 @@
+/* Settings Page */
+
+.settings-section {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: var(--text-color);
+}
+
+.section-description {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.api-key-status {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.api-key-form {
+    margin-bottom: 2rem;
+}
+
+.api-key-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.api-key-form .form-group > div:not(.form-group) {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.api-key-form .form-group > div > div:first-child {
+    flex: 1;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.help-section {
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.help-section h3 {
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+    color: var(--text-color);
+}
+
+.help-section ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.help-section li {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.help-section a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.help-section a:hover {
+    text-decoration: underline;
+}
+
+.note {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.info-value {
+    color: var(--text-secondary);
+}

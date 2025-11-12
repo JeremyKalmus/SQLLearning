@@ -1,0 +1,38 @@
+/* Icon Styles */
+
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+}
+
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-md {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-lg {
+    width: 24px;
+    height: 24px;
+}
+
+.btn .icon,
+.btn svg {
+    stroke-width: 2;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.stat-value .icon {
+    margin-left: var(--spacing-xs);
+    vertical-align: middle;
+}

@@ -1,0 +1,8 @@
+/* Footer Styles */
+
+footer {
+    text-align: center;
+    margin-top: var(--spacing-3xl);
+    padding: var(--spacing-lg);
+    color: var(--text-secondary);
+}

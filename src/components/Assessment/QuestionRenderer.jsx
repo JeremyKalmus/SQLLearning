@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import { sql, SQLDialect } from '@codemirror/lang-sql';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { CheckCircle } from 'lucide-react';
-import SchemaViewer from '../SchemaViewer';
+import {
+  MultipleChoiceQuestion,
+  WriteQueryQuestion,
+  ReadQueryQuestion,
+  FindErrorQuestion,
+  FillBlankQuestion
+} from './questionTypes';
+
+// Map question types to their corresponding components
+const QUESTION_COMPONENTS = {
+  'multiple_choice': MultipleChoiceQuestion,
+  'write_query': WriteQueryQuestion,
+  'read_query': ReadQueryQuestion,
+  'find_error': FindErrorQuestion,
+  'fill_blank': FillBlankQuestion
+};
 
 export default function QuestionRenderer({ question, onSubmit, onSkip, feedback }) {
   const [answer, setAnswer] = useState(null);
@@ -43,267 +55,20 @@ export default function QuestionRenderer({ question, onSubmit, onSkip, feedback 
   }, [question, questionData]);
 
   const renderQuestion = () => {
-    switch (question.question_type) {
-      case 'multiple_choice':
-        // Convert literal \n strings to actual newlines
-        const codeSnippet = questionData.code 
-          ? (questionData.code || '')
-              .replace(/\\n/g, '\n')
-              .replace(/\\r\\n/g, '\n')
-              .replace(/\\r/g, '\n')
-          : null;
-        
-        return (
-          <div className="question-multiple-choice">
-            <h2>{questionData.question}</h2>
-            {codeSnippet && (
-              <div className="question-code">
-                <CodeMirror
-                  value={codeSnippet}
-                  extensions={[sql({
-                    dialect: SQLDialect.StandardSQL,
-                    upperCaseKeywords: true
-                  })]}
-                  theme={oneDark}
-                  editable={false}
-                  basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: false,
-                    highlightActiveLine: false,
-                  }}
-                  style={{
-                    fontSize: '14px',
-                    border: '2px solid var(--border-color)',
-                    borderRadius: 'var(--radius-lg)',
-                    overflow: 'hidden',
-                  }}
-                />
-              </div>
-            )}
-            <div className="options-list">
-              {questionData.options.map((option, index) => (
-                <button
-                  key={index}
-                  className={`option-button ${
-                    answer?.selectedOption === index ? 'selected' : ''
-                  }`}
-                  onClick={() => setAnswer({ selectedOption: index })}
-                  disabled={submitted}
-                >
-                  <span className="option-letter">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  <span className="option-text">{option}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        );
+    const QuestionComponent = QUESTION_COMPONENTS[question.question_type];
 
-      case 'write_query':
-        return (
-          <div className="question-write-query">
-            <h2>{questionData.question}</h2>
-            <p className="question-description">{questionData.description}</p>
-            <div className="schema-viewer-container" style={{ marginBottom: '1rem' }}>
-              <SchemaViewer />
-            </div>
-            <div className="code-editor">
-              <CodeMirror
-                value={answer?.query || ''}
-                height="300px"
-                extensions={[sql({
-                  dialect: SQLDialect.StandardSQL,
-                  upperCaseKeywords: true
-                })]}
-                theme={oneDark}
-                onChange={(value) => setAnswer({ query: value })}
-                placeholder="-- Write your SQL query here...\nSELECT * FROM table_name;"
-                editable={!submitted}
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: true,
-                  highlightActiveLine: true,
-                  foldGutter: true,
-                  dropCursor: true,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: true,
-                  highlightSelectionMatches: true,
-                }}
-                style={{
-                  fontSize: '14px',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                }}
-              />
-            </div>
-          </div>
-        );
-
-      case 'read_query':
-        // Convert literal \n strings to actual newlines
-        const queryToRead = (questionData.queryToRead || '')
-          .replace(/\\n/g, '\n')
-          .replace(/\\r\\n/g, '\n')
-          .replace(/\\r/g, '\n');
-        
-        return (
-          <div className="question-read-query">
-            <h2>{questionData.question}</h2>
-            <div className="query-to-read">
-              <CodeMirror
-                value={queryToRead}
-                extensions={[sql({
-                  dialect: SQLDialect.StandardSQL,
-                  upperCaseKeywords: true
-                })]}
-                theme={oneDark}
-                editable={false}
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: false,
-                  highlightActiveLine: false,
-                }}
-                style={{
-                  fontSize: '14px',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                }}
-                minHeight="150px"
-              />
-            </div>
-            <p className="read-query-prompt">What does this query return?</p>
-            <div className="options-list">
-              {questionData.options.map((option, index) => (
-                <button
-                  key={index}
-                  className={`option-button ${
-                    answer?.selectedOption === index ? 'selected' : ''
-                  }`}
-                  onClick={() => setAnswer({ selectedOption: index })}
-                  disabled={submitted}
-                >
-                  <span className="option-letter">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  <span className="option-text">{option}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'find_error':
-        // Convert literal \n strings to actual newlines
-        const brokenQuery = (questionData.brokenQuery || '')
-          .replace(/\\n/g, '\n')
-          .replace(/\\r\\n/g, '\n')
-          .replace(/\\r/g, '\n');
-        
-        return (
-          <div className="question-find-error">
-            <h2>{questionData.question}</h2>
-            <div className="broken-query">
-              <h3>Broken Query:</h3>
-              <CodeMirror
-                value={brokenQuery}
-                extensions={[sql({
-                  dialect: SQLDialect.StandardSQL,
-                  upperCaseKeywords: true
-                })]}
-                theme={oneDark}
-                editable={false}
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: false,
-                  highlightActiveLine: false,
-                }}
-                style={{
-                  fontSize: '14px',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                }}
-              />
-            </div>
-            <div className="fix-query">
-              <h3>Your Fix:</h3>
-              <CodeMirror
-                value={answer?.fixedQuery || ''}
-                height="250px"
-                extensions={[sql({
-                  dialect: SQLDialect.StandardSQL,
-                  upperCaseKeywords: true
-                })]}
-                theme={oneDark}
-                onChange={(value) => setAnswer({ fixedQuery: value })}
-                placeholder="-- Write the corrected query or describe the error..."
-                editable={!submitted}
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: true,
-                  highlightActiveLine: true,
-                  foldGutter: true,
-                  dropCursor: true,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: true,
-                  highlightSelectionMatches: true,
-                }}
-                style={{
-                  fontSize: '14px',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                }}
-              />
-            </div>
-          </div>
-        );
-
-      case 'fill_blank':
-        // Convert literal \n strings to actual newlines
-        const queryTemplate = (questionData.queryTemplate || '')
-          .replace(/\\n/g, '\n')
-          .replace(/\\r\\n/g, '\n')
-          .replace(/\\r/g, '\n');
-        
-        return (
-          <div className="question-fill-blank">
-            <h2>{questionData.question}</h2>
-            <div className="query-template">
-              <pre>{queryTemplate}</pre>
-            </div>
-            <div className="blanks-input">
-              {questionData.blanks.map((blank, index) => (
-                <div key={index} className="blank-item">
-                  <label>Blank {index + 1}:</label>
-                  <input
-                    type="text"
-                    value={answer?.blanks?.[index] || ''}
-                    onChange={(e) => {
-                      const newBlanks = [...(answer?.blanks || [])];
-                      newBlanks[index] = e.target.value;
-                      setAnswer({ blanks: newBlanks });
-                    }}
-                    disabled={submitted}
-                    className="blank-input"
-                    placeholder="Enter keyword..."
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      default:
-        return <div>Unknown question type</div>;
+    if (!QuestionComponent) {
+      return <div>Unknown question type: {question.question_type}</div>;
     }
+
+    return (
+      <QuestionComponent
+        questionData={questionData}
+        answer={answer}
+        onAnswerChange={setAnswer}
+        submitted={submitted}
+      />
+    );
   };
 
   return (
