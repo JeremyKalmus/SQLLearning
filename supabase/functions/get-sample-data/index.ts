@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ rows: data || [], rowCount: data?.length || 0 }),
+      JSON.stringify({ rows: data?.rows || [], rowCount: data?.rows?.length || 0 }),
       {
         headers: {
           ...corsHeaders,
